@@ -6,6 +6,9 @@
     ":semanticCommits",
     "helpers:pinGitHubActionDigests"
   ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "minimumReleaseAge": "3 days",
   "rebaseWhen": "behind-base-branch",
   "packageRules": [
