@@ -4,7 +4,11 @@
     "config:recommended",
     "mergeConfidence:all-badges",
     ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
     "helpers:pinGitHubActionDigests"
+  ],
+  "ignorePresets": [
+    ":semanticPrefixFixDepsChoreOthers"
   ],
   "postUpdateOptions": [
     "gomodTidy"
