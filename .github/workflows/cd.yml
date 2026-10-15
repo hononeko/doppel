@@ -1,9 +1,17 @@
 name: Release Binary Assets
 
+# Every push to main that warrants a new version releases it: signed, attested binary archives for each platform,
+# a vX.Y.Z tag and a GitHub Release with grouped release notes. The version and notes rules are shared by all my
+# repositories (vehkiya/actions). Dispatch with dry_run to see the next version and its notes without releasing.
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main"]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Show the next version and its release notes without releasing
+        type: boolean
+        default: false
 
 # Never cancel a release mid-flight: a run cancelled after pushing its tag would
 # leave a tag without a release. Superseded runs skip themselves at the tip check.
@@ -17,91 +25,93 @@ jobs:
     permissions:
       contents: read
 
-  release:
-    name: Build & Publish Release
+  plan:
+    name: Plan Release
     needs: validate
-    runs-on: ubuntu-latest
-    # DOPPEL_SIGNING_KEY lives in this environment, which only the main branch can deploy to.
-    environment: release
+    runs-on: ubuntu-24.04
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
-
+      contents: read
+    outputs:
+      release: ${{ steps.decide.outputs.release }}
+      version_tag: ${{ steps.version.outputs.version-tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
-      - name: Verify Commit is Branch Tip
-        id: check_tip
-        run: |
-          git fetch origin "${{ github.ref_name }}" --tags
-          REMOTE_HEAD=$(git rev-parse "origin/${{ github.ref_name }}")
-          LOCAL_HEAD=$(git rev-parse HEAD)
-          echo "Current runner commit: $LOCAL_HEAD"
-          echo "Latest branch commit:  $REMOTE_HEAD"
-          if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
-            echo "is_latest=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Current commit ($LOCAL_HEAD) is superseded by origin/${{ github.ref_name }} ($REMOTE_HEAD). Skipping release to prevent out-of-order release generation."
-          else
-            echo "is_latest=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Calculate Semantic Version
-        if: steps.check_tip.outputs.is_latest == 'true'
+      - name: Version
         id: version
-        uses: PaulHatch/semantic-version@4d6da96a9bc3116da3613309a11ff75fba58eb8d # v6.0.4
+        uses: vehkiya/actions/version@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
         with:
-          change_path: "."
-          bump_each_commit: false
-          tag_prefix: "v"
-          major_pattern: "/!:|BREAKING CHANGE:/"
-          minor_pattern: "/feat(\\(.+\\))?:/"
-          # docs commits don't change the binary, so they don't bump the
-          # version. A push with nothing but docs commits since the last tag
-          # comes out as version_type "none", and makes no release. A breaking
-          # "docs!:" still matches major_pattern.
-          ignore_commits_pattern: "/^docs(\\(.+\\))?:/"
-          version_format: "${major}.${minor}.${patch}"
+          tag-prefix: v
 
-      - name: Verify There Is a New Version to Release
-        id: check_tag
-        if: steps.check_tip.outputs.is_latest == 'true'
+      - name: Release notes
+        uses: vehkiya/actions/release-notes@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
+        with:
+          previous-tag: ${{ steps.version.outputs.previous-tag }}
+          tag: ${{ steps.version.outputs.version-tag }}
+          summary: Release notes for ${{ steps.version.outputs.version-tag }}
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
+      # Releases only from main, only from its tip (a newer push releases instead, which avoids out-of-order
+      # releases), and only a version not yet tagged.
+      - name: Decide whether to release
+        id: decide
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          VERSION_TAG: ${{ steps.version.outputs.version-tag }}
+          VERSION_TYPE: ${{ steps.version.outputs.version-type }}
         run: |
-          VERSION="${{ steps.version.outputs.version_tag }}"
-          if [ -z "$VERSION" ]; then
-            echo "valid=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ "${{ steps.version.outputs.version_type }}" = "none" ]; then
-            echo "::notice::Nothing to release: no commit since ${VERSION} needs a new version (only docs, or it is already released)."
-            echo "valid=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git fetch origin --tags
-          if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
-            echo "::warning::Tag ${VERSION} already exists on remote. Skipping release."
-            echo "valid=false" >> "$GITHUB_OUTPUT"
+          release=true
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::Dry run: not releasing $VERSION_TAG"; release=false
+          elif [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::notice::Releases are published from main only"; release=false
+          elif [ "$VERSION_TYPE" = "none" ]; then
+            release=false
           else
-            echo "valid=true" >> "$GITHUB_OUTPUT"
+            git fetch -q origin main --tags
+            if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+              echo "::warning::$GITHUB_SHA is no longer the tip of main; the newer push releases instead"; release=false
+            elif git rev-parse -q --verify "refs/tags/$VERSION_TAG" >/dev/null; then
+              echo "::warning::$VERSION_TAG already exists; not releasing it again"; release=false
+            fi
           fi
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Build & Publish Release
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    runs-on: ubuntu-24.04
+    # DOPPEL_SIGNING_KEY lives in this environment, which only the main branch can deploy to.
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      VERSION_TAG: ${{ needs.plan.outputs.version_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Go
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: "go.mod"
           cache: true
 
       - name: Build Multi-Platform Release Archives
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
         run: |
-          VERSION="${{ steps.version.outputs.version_tag }}"
-          if [ -z "$VERSION" ]; then
-            VERSION="v0.1.0"
-          fi
+          VERSION="$VERSION_TAG"
           COMMIT=$(git rev-parse --short HEAD)
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           PKG="github.com/vehkiya/doppel/internal/version"
@@ -137,7 +147,6 @@ jobs:
           cd ..
 
       - name: Sign Checksums
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
         env:
           DOPPEL_SIGNING_KEY: ${{ secrets.DOPPEL_SIGNING_KEY }}
         run: |
@@ -165,7 +174,6 @@ jobs:
           base64 -w0 "$WORK_DIR/checksums.sig" > dist/checksums.txt.sig
 
       - name: Attest Build Provenance
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
@@ -173,32 +181,12 @@ jobs:
             dist/checksums.txt
             dist/checksums.txt.sig
 
-      - name: Generate Changelog
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-          if [ -z "$PREV_TAG" ]; then
-            git log --pretty=format:"* %s (%h)" > changelog.txt
-          else
-            git log "${PREV_TAG}..HEAD" --pretty=format:"* %s (%h)" > changelog.txt
-          fi
-
-      - name: Push Git Tag
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag ${{ steps.version.outputs.version_tag }}
-          git push origin ${{ steps.version.outputs.version_tag }}
-
-      - name: Create GitHub Release
-        if: steps.check_tip.outputs.is_latest == 'true' && steps.check_tag.outputs.valid == 'true'
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+      - name: Download release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          tag_name: ${{ steps.version.outputs.version_tag }}
-          name: Release ${{ steps.version.outputs.version_tag }}
-          body_path: changelog.txt
-          files: |
-            dist/*.tar.gz
-            dist/checksums.txt
-            dist/checksums.txt.sig
+          name: release-notes
+
+      - name: Tag & create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$VERSION_TAG" --target "$GITHUB_SHA" --title "$VERSION_TAG" --notes-file release-notes.md dist/*
