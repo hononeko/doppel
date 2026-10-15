@@ -109,3 +109,22 @@ Print through `app.stdout` and `app.stderr`, which `ui.Writer` wraps. Lip Gloss 
 * Test the full-screen wizard's navigation with `formDriver`, which sends keys to the real form and feeds its commands back as a terminal would.
 * Test the browser through its model (`New`, `Update`, `View`), not a real terminal. Every view must fit 60, 80 and 120 columns.
 * Prefer end-to-end tests that run doppel and then ask real `git` what applies in a repo, over tests of internal functions.
+
+---
+
+## Release Pipeline
+
+Versions and release notes come from the commit history ([Conventional Commits](https://www.conventionalcommits.org/)), using the rules shared by all my repositories in [`vehkiya/actions`](https://github.com/vehkiya/actions):
+* A `!` in the header (`feat!:`) or a `BREAKING CHANGE:` footer gives a **major** release.
+* `feat:` gives a **minor** release.
+* `docs:` and `test:` give no release.
+* Every other type gives a **patch** release.
+
+Commit subjects become the release notes, so write them for a reader of the release.
+
+* **Automatic releases:** every push to `main` that warrants a new version is released automatically (`.github/workflows/cd.yml`). The release has:
+  * signed checksums and attested archives for each platform;
+  * a `vX.Y.Z` tag;
+  * a GitHub Release with notes grouped into 💥 Breaking changes, 🚀 Features, 🐛 Bug fixes, 👷 CI and 📦 Others.
+* **Self-update:** `doppel update` follows the latest release, so a merged `fix:` reaches users as soon as it's released.
+* **Dry run:** dispatch the workflow with `dry_run` to see the next version and its release notes without releasing.
