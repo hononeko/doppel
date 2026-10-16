@@ -2,7 +2,7 @@ name: Release Binary Assets
 
 # Every push to main that warrants a new version releases it: signed, attested binary archives for each platform,
 # a vX.Y.Z tag and a GitHub Release with grouped release notes. The version and notes rules are shared by all my
-# repositories (vehkiya/actions). Dispatch with dry_run to see the next version and its notes without releasing.
+# repositories (hononeko/actions). Dispatch with dry_run to see the next version and its notes without releasing.
 on:
   push:
     branches: ["main"]
@@ -42,12 +42,12 @@ jobs:
 
       - name: Version
         id: version
-        uses: vehkiya/actions/version@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
+        uses: hononeko/actions/version@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
         with:
           tag-prefix: v
 
       - name: Release notes
-        uses: vehkiya/actions/release-notes@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
+        uses: hononeko/actions/release-notes@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
         with:
           previous-tag: ${{ steps.version.outputs.previous-tag }}
           tag: ${{ steps.version.outputs.version-tag }}

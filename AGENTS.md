@@ -114,7 +114,7 @@ Print through `app.stdout` and `app.stderr`, which `ui.Writer` wraps. Lip Gloss 
 
 ## Release Pipeline
 
-Versions and release notes come from the commit history ([Conventional Commits](https://www.conventionalcommits.org/)), using the rules shared by all my repositories in [`vehkiya/actions`](https://github.com/vehkiya/actions):
+Versions and release notes come from the commit history ([Conventional Commits](https://www.conventionalcommits.org/)), using the rules shared by all my repositories in [`hononeko/actions`](https://github.com/hononeko/actions):
 * A `!` in the header (`feat!:`) or a `BREAKING CHANGE:` footer gives a **major** release.
 * `feat:` gives a **minor** release.
 * `docs:` and `test:` give no release.
