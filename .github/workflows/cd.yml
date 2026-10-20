@@ -42,12 +42,12 @@ jobs:
 
       - name: Version
         id: version
-        uses: hononeko/actions/version@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
+        uses: hononeko/actions/version@5195ba91f927f924616c364a7eddd737fbff5308 # v1.2.0
         with:
           tag-prefix: v
 
       - name: Release notes
-        uses: hononeko/actions/release-notes@38745be070eaab8f0aa89ac688573967094af0d0 # v1.1.0
+        uses: hononeko/actions/release-notes@5195ba91f927f924616c364a7eddd737fbff5308 # v1.2.0
         with:
           previous-tag: ${{ steps.version.outputs.previous-tag }}
           tag: ${{ steps.version.outputs.version-tag }}
