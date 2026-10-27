@@ -5,7 +5,8 @@
     "mergeConfidence:all-badges",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigests",
+    "github>hononeko/actions//renovate/downstream"
   ],
   "ignorePresets": [
     ":semanticPrefixFixDepsChoreOthers"
