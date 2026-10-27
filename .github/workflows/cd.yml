@@ -38,16 +38,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Version
         id: version
-        uses: hononeko/actions/version@447f70cc12b6edef1ce53187f14c01c582ed7300 # v1.4.0
+        uses: hononeko/actions/version@v1
         with:
           tag-prefix: v
 
       - name: Release notes
-        uses: hononeko/actions/release-notes@447f70cc12b6edef1ce53187f14c01c582ed7300 # v1.4.0
+        uses: hononeko/actions/release-notes@v1
         with:
           previous-tag: ${{ steps.version.outputs.previous-tag }}
           tag: ${{ steps.version.outputs.version-tag }}
@@ -102,6 +103,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -143,7 +146,7 @@ jobs:
           done
 
           cd dist
-          sha256sum * > checksums.txt
+          sha256sum -- * > checksums.txt
           cd ..
 
       - name: Sign Checksums
