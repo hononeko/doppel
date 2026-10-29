@@ -5,8 +5,8 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
 )
 
 // keyFlags are the key settings shared by add and edit.

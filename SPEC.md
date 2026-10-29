@@ -8,7 +8,7 @@
 
 doppel works by writing plain Git config that Git applies on its own. It doesn't wrap `git`, and it doesn't need to run for Git to pick the right account. If doppel is uninstalled, the accounts keep working.
 
-It's a sibling of [sshx](https://github.com/vehkiya/sshx): the same stack, look and conventions (see sshx's `AGENTS.md`).
+It's a sibling of [sshx](https://github.com/hononeko/sshx): the same stack, look and conventions (see sshx's `AGENTS.md`).
 
 ## 2. Goals and non-goals
 
@@ -442,7 +442,7 @@ Every account file sets every setting doppel manages, including a "reset" value 
 ### 6.6 Code and conventions
 
 - Go (the same version as sshx). Charm stack: Bubble Tea, Bubbles, Huh, Lip Gloss. Static binary, no CGO, macOS and Linux.
-- Code is organized in packages under `internal/`. `main.go` stays at the repo root, so `go install github.com/vehkiya/doppel@latest` builds a `doppel` binary, as with sshx.
+- Code is organized in packages under `internal/`. `main.go` stays at the repo root, so `go install github.com/hononeko/doppel@latest` builds a `doppel` binary, as with sshx.
   ```
   main.go          calls cli.Run
   internal/
@@ -485,7 +485,7 @@ Every account file sets every setting doppel manages, including a "reset" value 
 
 ### 6.8 Distribution
 
-- `go install github.com/vehkiya/doppel@latest`, plus GitHub release binaries for Linux and macOS (amd64 and arm64), adapted from sshx's workflows.
+- `go install github.com/hononeko/doppel@latest`, plus GitHub release binaries for Linux and macOS (amd64 and arm64), adapted from sshx's workflows.
   - **Validation:** every PR is linted and tested on Linux, tested on macOS (for `gitdir/i:` and its case-insensitive filesystem), and tested against Git 2.34 (Ubuntu 22.04).
   - **Releases:** every merge to `main` that changes the version gets a release. The version comes from Conventional Commits: `feat` bumps the minor version, `!` or `BREAKING CHANGE` the major, `docs` nothing, and anything else the patch. A merge with only `docs` commits since the last release makes no release; its changes ship with the next one.
   - **Verification:** releases carry SHA-256 checksums signed with the release key, and GitHub build provenance (`gh attestation verify`).

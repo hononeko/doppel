@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 func TestSSHCommand(t *testing.T) {

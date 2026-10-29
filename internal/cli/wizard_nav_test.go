@@ -10,7 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/vehkiya/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/accounts"
 )
 
 // formDriver feeds keys to a Huh form the way a terminal would, running the

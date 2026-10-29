@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/proc"
 )
 
 // Git 2.34 added SSH commit signing, which every account file configures.

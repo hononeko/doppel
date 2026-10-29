@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/keys"
 )
 
 // commitAt makes a commit dated at, signed with signingKey ("" for the

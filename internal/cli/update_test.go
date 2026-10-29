@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/update"
-	"github.com/vehkiya/doppel/internal/version"
+	"github.com/hononeko/doppel/internal/update"
+	"github.com/hononeko/doppel/internal/version"
 )
 
 func TestUpdateUsage(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/plan"
+	"github.com/hononeko/doppel/internal/plan"
 )
 
 const diffContext = 2

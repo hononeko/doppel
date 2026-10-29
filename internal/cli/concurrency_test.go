@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/accounts"
 )
 
 // another returns an app like a, as a second doppel process would be: its own

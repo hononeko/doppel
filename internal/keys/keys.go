@@ -15,7 +15,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/proc"
 )
 
 // ReadPublic returns the "<type> <base64>" part of a public key, read from

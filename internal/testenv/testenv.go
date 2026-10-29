@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // Sandbox is a temporary home directory. HOME and XDG_CONFIG_HOME point at

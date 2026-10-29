@@ -1,13 +1,13 @@
 # doppel 👥
 
-[![Release](https://github.com/vehkiya/doppel/actions/workflows/cd.yml/badge.svg)](https://github.com/vehkiya/doppel/actions/workflows/cd.yml)
-[![CodeQL Analysis](https://github.com/vehkiya/doppel/actions/workflows/codeql.yml/badge.svg)](https://github.com/vehkiya/doppel/actions/workflows/codeql.yml)
+[![Release](https://github.com/hononeko/doppel/actions/workflows/cd.yml/badge.svg)](https://github.com/hononeko/doppel/actions/workflows/cd.yml)
+[![CodeQL Analysis](https://github.com/hononeko/doppel/actions/workflows/codeql.yml/badge.svg)](https://github.com/hononeko/doppel/actions/workflows/codeql.yml)
 [![Linted with golangci-lint](https://img.shields.io/badge/linted%20with-golangci--lint-00ADD8?logo=go&logoColor=white)](https://golangci-lint.run)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **doppel** manages several Git accounts on one machine. Repos under `~/projects/work` commit as your work identity, push with your work SSH key and sign with your work signing key. Everything else uses your personal account. You never switch anything by hand.
 
-doppel only writes plain Git config, which Git applies by itself: it doesn't wrap `git`, and it doesn't need to be running. It's a sibling of [sshx](https://github.com/vehkiya/sshx), built with the [Charm](https://charm.sh) stack.
+doppel only writes plain Git config, which Git applies by itself: it doesn't wrap `git`, and it doesn't need to be running. It's a sibling of [sshx](https://github.com/hononeko/sshx), built with the [Charm](https://charm.sh) stack.
 
 ![doppel TUI](assets/screenshot.png)
 
@@ -62,7 +62,7 @@ doppel runs on Linux and macOS. It needs Git 2.34 or newer and OpenSSH 8.2 or ne
 
 ### Release binary
 
-Each [release](https://github.com/vehkiya/doppel/releases) has a prebuilt binary for Linux and macOS, on Intel (`amd64`) and ARM (`arm64`, including Apple silicon). These commands download the latest one for your machine, check it against the release's checksums, and install it in `~/.local/bin`:
+Each [release](https://github.com/hononeko/doppel/releases) has a prebuilt binary for Linux and macOS, on Intel (`amd64`) and ARM (`arm64`, including Apple silicon). These commands download the latest one for your machine, check it against the release's checksums, and install it in `~/.local/bin`:
 
 ```bash
 os=$(uname -s | tr '[:upper:]' '[:lower:]')        # linux or darwin
@@ -71,8 +71,8 @@ case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac
 archive="doppel_${os}_${arch}.tar.gz"
 
 cd "$(mktemp -d)"
-curl -fsSLO "https://github.com/vehkiya/doppel/releases/latest/download/$archive"
-curl -fsSLO "https://github.com/vehkiya/doppel/releases/latest/download/checksums.txt"
+curl -fsSLO "https://github.com/hononeko/doppel/releases/latest/download/$archive"
+curl -fsSLO "https://github.com/hononeko/doppel/releases/latest/download/checksums.txt"
 grep " $archive\$" checksums.txt | sha256sum -c -     # macOS without sha256sum: shasum -a 256 -c -
 ```
 
@@ -96,7 +96,7 @@ Once installed, `doppel update` keeps it current, and only installs releases sig
 ### With Go
 
 ```bash
-go install github.com/vehkiya/doppel@latest
+go install github.com/hononeko/doppel@latest
 ```
 
 This builds doppel from source into `$(go env GOPATH)/bin`, which needs to be on your `PATH`.

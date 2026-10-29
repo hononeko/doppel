@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/proc"
 )
 
 // KeychainSupported reports whether the ssh on PATH is Apple's, the only one

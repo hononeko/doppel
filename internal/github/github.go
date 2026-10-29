@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/proc"
 )
 
 // DotCom is GitHub's own host, which GitHub Enterprise Cloud shares.

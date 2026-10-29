@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/proc"
 )
 
 // LoginResult is what a host said when a key tried to log in.

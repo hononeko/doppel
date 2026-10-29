@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
 )
 
 const greeting = "Hi jane-acme! You've successfully authenticated, but GitHub does not provide shell access."

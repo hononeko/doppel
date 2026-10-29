@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/ops"
-	"github.com/vehkiya/doppel/internal/store"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 // lockWrites takes the write lock, unless this command already holds it.

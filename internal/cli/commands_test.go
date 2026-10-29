@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/store"
 )
 
 func TestOtherSettingsSurviveEditAndRename(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"github.com/vehkiya/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/keys"
 )
 
 // maxSuggestions bounds the suggestions for one path, so a huge folder

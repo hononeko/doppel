@@ -12,9 +12,9 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 // ActionKind is what the user asked the browser for.

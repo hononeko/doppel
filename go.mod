@@ -1,4 +1,4 @@
-module github.com/vehkiya/doppel
+module github.com/hononeko/doppel
 
 go 1.27.3
 

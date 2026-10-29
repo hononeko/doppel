@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 func TestFromGlobalReadsIncludedFilesButNotDoppels(t *testing.T) {

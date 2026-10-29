@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/vehkiya/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/ops"
 )
 
 const uninstallUsage = "doppel uninstall [--dry-run] [--yes]"

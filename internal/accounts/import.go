@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // IncludeCleanup identifies an includeIf directive in a Git config file to

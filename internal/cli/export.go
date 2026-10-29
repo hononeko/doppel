@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/term"
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
-	"github.com/vehkiya/doppel/internal/proc"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 const exportUsage = "doppel export <id> [--auth | --signing] [--no-copy]"

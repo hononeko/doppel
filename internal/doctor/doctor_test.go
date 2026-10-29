@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/doctor"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/hosts"
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/doctor"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 // Check reports findings rather than printing them: each in its area, with

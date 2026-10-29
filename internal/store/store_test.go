@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/plan"
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/plan"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 func newAccount(id string) *accounts.Account {

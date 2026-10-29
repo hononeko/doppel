@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/git"
 )
 
 func TestWhoami(t *testing.T) {

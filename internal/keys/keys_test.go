@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/proc"
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/proc"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 func TestReadPublic(t *testing.T) {

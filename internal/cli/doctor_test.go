@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
 )
 
 // doctorSandbox has a default account and a work account with a key of

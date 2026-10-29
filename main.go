@@ -5,7 +5,7 @@ package main
 import (
 	"os"
 
-	"github.com/vehkiya/doppel/internal/cli"
+	"github.com/hononeko/doppel/internal/cli"
 )
 
 func main() {

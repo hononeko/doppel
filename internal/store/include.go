@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/plan"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/plan"
 )
 
 // IncludeComment marks the block doppel appends to the global Git config.

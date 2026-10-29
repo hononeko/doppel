@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-const module = "github.com/vehkiya/doppel"
+const module = "github.com/hononeko/doppel"
 
 // layers lists, for each package, the internal packages its code may import
 // (tests aside). Dependencies point one way, from cli down to the leaves, so

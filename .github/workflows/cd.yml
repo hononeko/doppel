@@ -117,7 +117,7 @@ jobs:
           VERSION="$VERSION_TAG"
           COMMIT=$(git rev-parse --short HEAD)
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          PKG="github.com/vehkiya/doppel/internal/version"
+          PKG="github.com/hononeko/doppel/internal/version"
           LDFLAGS="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}"
 
           mkdir -p dist

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/accounts"
 )
 
 const completionUsage = "doppel completion zsh|bash|fish"

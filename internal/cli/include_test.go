@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/store"
 )
 
 func TestIncludeIsAppendedOnceAtTheEnd(t *testing.T) {

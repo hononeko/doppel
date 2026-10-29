@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/hosts"
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 func TestSSHHost(t *testing.T) {

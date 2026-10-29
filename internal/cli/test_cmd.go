@@ -1,10 +1,10 @@
 package cli
 
 import (
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
-	"github.com/vehkiya/doppel/internal/store"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 const testUsage = "doppel test [<id>]"

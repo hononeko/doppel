@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
 )
 
 func TestFoldersPickTheAccount(t *testing.T) {

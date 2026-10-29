@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"charm.land/huh/v2"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/ops"
 )
 
 // macKeychain reports whether passphrases can be kept in the macOS

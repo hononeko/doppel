@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/vehkiya/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/accounts"
 )
 
 func TestFolderCompletion(t *testing.T) {

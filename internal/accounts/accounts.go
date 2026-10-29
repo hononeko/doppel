@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // Protocol is the remote transport protocol an account allows.

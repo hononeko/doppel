@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // lockWait is how long Lock waits for another doppel command to finish.

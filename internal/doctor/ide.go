@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // ide checks local IDE configurations (JetBrains and VS Code / derivatives)

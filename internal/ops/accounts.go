@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/accounts"
 )
 
 // AddRequest describes a new account.

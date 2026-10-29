@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/hosts"
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/store"
 )
 
 // Identity is which account applies at a path, and why.

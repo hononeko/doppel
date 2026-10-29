@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/atomicfile"
+	"github.com/hononeko/doppel/internal/atomicfile"
 )
 
 // Plan stages file changes so a command can preview them (--dry-run) or

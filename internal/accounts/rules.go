@@ -3,7 +3,7 @@ package accounts
 import (
 	"sort"
 
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 // Rule is one folder rule: repos inside Folder use the account ID.

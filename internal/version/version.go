@@ -4,14 +4,14 @@ package version
 import "runtime/debug"
 
 // Version information injected at build time, e.g.
-// -ldflags "-X github.com/vehkiya/doppel/internal/version.Version=v1.0.0".
+// -ldflags "-X github.com/hononeko/doppel/internal/version.Version=v1.0.0".
 var (
 	Version   = "dev"
 	Commit    = "none"
 	BuildDate = "unknown"
 )
 
-// Builds without -ldflags, such as `go install github.com/vehkiya/doppel@latest`,
+// Builds without -ldflags, such as `go install github.com/hononeko/doppel@latest`,
 // take their version and VCS details from the module build info instead.
 func init() {
 	info, ok := debug.ReadBuildInfo()

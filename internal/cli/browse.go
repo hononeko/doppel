@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
-	"github.com/vehkiya/doppel/internal/store"
-	"github.com/vehkiya/doppel/internal/tui"
-	"github.com/vehkiya/doppel/internal/ui"
-	"github.com/vehkiya/doppel/internal/update"
-	"github.com/vehkiya/doppel/internal/version"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/tui"
+	"github.com/hononeko/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/update"
+	"github.com/hononeko/doppel/internal/version"
 )
 
 // browse runs the account browser until the user quits. Each action leaves

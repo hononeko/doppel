@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 func TestFolderRulesAndMatch(t *testing.T) {

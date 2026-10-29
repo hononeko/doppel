@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 const whoamiUsage = "doppel whoami [path] [--offline] [--json]"

@@ -10,12 +10,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/hosts"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/plan"
-	"github.com/vehkiya/doppel/internal/store"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/hosts"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/plan"
+	"github.com/hononeko/doppel/internal/store"
 )
 
 // Context is what every operation needs from the command running it.

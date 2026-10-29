@@ -22,11 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/atomicfile"
+	"github.com/hononeko/doppel/internal/atomicfile"
 )
 
 const (
-	repo           = "vehkiya/doppel"
+	repo           = "hononeko/doppel"
 	checksumsAsset = "checksums.txt"
 	signatureAsset = "checksums.txt.sig"
 	cacheTTL       = 6 * time.Hour

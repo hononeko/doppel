@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
 )
 
 const bindUsage = "doppel bind <id> <folder>... [--dry-run] [--yes]"

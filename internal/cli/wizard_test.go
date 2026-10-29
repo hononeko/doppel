@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/tui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/tui"
 )
 
 // script joins scripted wizard answers, one per prompt. An empty answer

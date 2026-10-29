@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/doctor"
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/doctor"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 const doctorUsage = "doppel doctor [--fix]"

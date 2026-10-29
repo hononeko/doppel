@@ -12,13 +12,13 @@ import (
 
 	"charm.land/huh/v2"
 	"github.com/charmbracelet/x/term"
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/hosts"
-	"github.com/vehkiya/doppel/internal/keys"
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/ui"
-	"github.com/vehkiya/doppel/internal/update"
-	"github.com/vehkiya/doppel/internal/version"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
+	"github.com/hononeko/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/update"
+	"github.com/hononeko/doppel/internal/version"
 )
 
 // errCancelled is returned when the user declines a confirmation.

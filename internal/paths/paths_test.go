@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/paths"
-	"github.com/vehkiya/doppel/internal/testenv"
+	"github.com/hononeko/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/testenv"
 )
 
 func TestNormalizeFolder(t *testing.T) {

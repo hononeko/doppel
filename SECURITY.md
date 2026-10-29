@@ -44,10 +44,10 @@ To verify a download by hand, save the key above as `doppel-release.pub.pem`, th
 base64 -d checksums.txt.sig > checksums.sig
 openssl pkeyutl -verify -pubin -inkey doppel-release.pub.pem -rawin -in checksums.txt -sigfile checksums.sig
 sha256sum --check --ignore-missing checksums.txt
-gh attestation verify doppel_linux_amd64.tar.gz --repo vehkiya/doppel
+gh attestation verify doppel_linux_amd64.tar.gz --repo hononeko/doppel
 ```
 
-The last command checks GitHub build provenance: that the archive was built by this repository's release workflow on `main`.
+The last command checks GitHub build provenance: that the archive was built by this repository's release workflow on `main`. Releases up to v1.3.10 were built before the repository moved from `vehkiya`; verify those with `--owner vehkiya` instead of `--repo`.
 
 Releases before v0.5.0 have no `checksums.txt.sig`.
 

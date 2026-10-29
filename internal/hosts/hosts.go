@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/vehkiya/doppel/internal/git"
-	"github.com/vehkiya/doppel/internal/github"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/github"
 )
 
 // GitHub tells which hosts are GitHub, and which host gh talks to for each

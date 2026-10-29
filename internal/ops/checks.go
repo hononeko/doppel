@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/github"
-	"github.com/vehkiya/doppel/internal/keys"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/github"
+	"github.com/hononeko/doppel/internal/keys"
 )
 
 // Check is the outcome of trying one of an account's keys for real.

@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/vehkiya/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/ui"
 )
 
 // stringList is a repeatable flag.

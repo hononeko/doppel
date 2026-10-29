@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/ops"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/ops"
 )
 
 const uploadUsage = "doppel upload <id> [--auth | --signing]"

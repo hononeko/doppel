@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vehkiya/doppel/internal/accounts"
-	"github.com/vehkiya/doppel/internal/paths"
+	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/paths"
 )
 
 func TestRenderIndex(t *testing.T) {

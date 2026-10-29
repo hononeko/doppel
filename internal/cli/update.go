@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"github.com/vehkiya/doppel/internal/ui"
-	"github.com/vehkiya/doppel/internal/update"
-	"github.com/vehkiya/doppel/internal/version"
+	"github.com/hononeko/doppel/internal/ui"
+	"github.com/hononeko/doppel/internal/update"
+	"github.com/hononeko/doppel/internal/version"
 )
 
 const updateUsage = "doppel update [--check] [--force]"

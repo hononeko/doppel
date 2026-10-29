@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/vehkiya/doppel/internal/plan"
+	"github.com/hononeko/doppel/internal/plan"
 )
 
 // WriteDiff gets doppel's stdout, which Writer leaves without colors here.
