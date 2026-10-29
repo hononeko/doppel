@@ -5,8 +5,10 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/hononeko/doppel/internal/accounts"
 )
 
@@ -46,6 +48,25 @@ func TestFolderCompletion(t *testing.T) {
 	d.press(tea.KeyTab)
 	if d.focused() == "folders" {
 		t.Fatalf("Tab with nothing to complete stayed on folders (value %q)", ans.Folders)
+	}
+}
+
+// Huh computes suggestions on another goroutine while typing goes on. The
+// driver stops waiting for a command after 50ms, so slow suggestions are
+// still reading the value when the next key changes it: -race fails the test
+// unless the two are synchronized.
+func TestSlowSuggestionsWhileTyping(t *testing.T) {
+	var value string
+	slow := func(string) []string {
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}
+	a, ans := &app{}, &answers{}
+	in := a.completePaths(ans, huh.NewInput().Key("path").Value(&value), "path", &value, slow)
+	d := newFormDriver(t, huh.NewForm(huh.NewGroup(in)), nil)
+	d.typeText("abc")
+	if value != "abc" {
+		t.Errorf("typed abc, value = %q", value)
 	}
 }
 

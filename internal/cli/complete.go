@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
@@ -17,8 +18,27 @@ const maxSuggestions = 100
 // completion is a wizard input that suggests paths: the answer it edits, and
 // the suggestions for what's typed so far.
 type completion struct {
-	value   *string
+	value   *lockedString
 	suggest func(typed string) []string
+}
+
+// lockedString is an input's value, shared with the suggestion commands Huh
+// runs on other goroutines.
+type lockedString struct {
+	mu sync.Mutex
+	p  *string
+}
+
+func (s *lockedString) Get() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return *s.p
+}
+
+func (s *lockedString) Set(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	*s.p = v
 }
 
 // completePaths gives a wizard input path suggestions that follow what's
@@ -31,10 +51,11 @@ func (a *app) completePaths(ans *answers, in *huh.Input, key string, value *stri
 	if ans.completions == nil {
 		ans.completions = map[string]completion{}
 	}
-	ans.completions[key] = completion{value, suggest}
+	locked := &lockedString{p: value}
+	ans.completions[key] = completion{locked, suggest}
 	// Huh runs the func again whenever the binding changes; it follows the
 	// pointer, so every keystroke counts.
-	return in.SuggestionsFunc(func() []string { return suggest(*value) }, value)
+	return in.Accessor(locked).SuggestionsFunc(func() []string { return suggest(locked.Get()) }, value)
 }
 
 // acceptSuggestion is the key Huh accepts a suggestion with.
@@ -56,7 +77,7 @@ func (ans *answers) completeOnTab(msg tea.Msg) tea.Msg {
 	if !ok {
 		return msg
 	}
-	typed := *c.value
+	typed := c.value.Get()
 	for _, s := range c.suggest(typed) {
 		if len(s) > len(typed) && strings.HasPrefix(strings.ToLower(s), strings.ToLower(typed)) {
 			return acceptSuggestion
