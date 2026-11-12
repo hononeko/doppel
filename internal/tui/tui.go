@@ -28,6 +28,7 @@ const (
 	Delete     ActionKind = "delete"
 	Bind       ActionKind = "bind"
 	SetDefault ActionKind = "default"
+	Load       ActionKind = "load"
 	Export     ActionKind = "export"
 	Upload     ActionKind = "upload"
 	Test       ActionKind = "test"
@@ -89,7 +90,7 @@ func (i item) Description() string { return i.acc.Email }
 func (i item) FilterValue() string { return i.acc.ID + " " + i.acc.Email }
 
 type keyMap struct {
-	edit, add, del, bind, def, export, upload, test, details, upgrade key.Binding
+	edit, add, del, bind, def, load, export, upload, test, details, upgrade key.Binding
 }
 
 func newKeyMap() keyMap {
@@ -99,6 +100,7 @@ func newKeyMap() keyMap {
 		del:     key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 		bind:    key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "bind folder")),
 		def:     key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "default")),
+		load:    key.NewBinding(key.WithKeys("l"), key.WithHelp("l", "load key")),
 		export:  key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export key")),
 		upload:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "upload to GitHub")),
 		test:    key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "test")),
@@ -158,10 +160,13 @@ func New(opts Options) Model {
 		return []key.Binding{keys.edit, keys.add}
 	}
 	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{keys.edit, keys.add, keys.del, keys.bind, keys.def, keys.export, keys.upload, keys.test, keys.details, keys.upgrade}
+		return []key.Binding{keys.edit, keys.add, keys.del, keys.bind, keys.def, keys.load, keys.export, keys.upload, keys.test, keys.details, keys.upgrade}
 	}
 	l.KeyMap.Quit.SetKeys("q", "esc")
 	l.KeyMap.Quit.SetHelp("q/esc", "quit")
+	// l is used to load keys, so take it off NextPage's keys and help.
+	l.KeyMap.NextPage.SetKeys("right", "pgdown", "f")
+	l.KeyMap.NextPage.SetHelp("→/pgdn", "next page")
 	l.Select(selected)
 
 	info := opts.KeyInfo
@@ -267,6 +272,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.pick(Bind)
 		case key.Matches(msg, m.keys.def):
 			return m.pick(SetDefault)
+		case key.Matches(msg, m.keys.load):
+			return m.pick(Load)
 		case key.Matches(msg, m.keys.export):
 			return m.pick(Export)
 		case key.Matches(msg, m.keys.upload):
@@ -464,7 +471,7 @@ func (m Model) details(acc *accounts.Account) string {
 		row("File", m.env.Shorten(m.env.AccountPath(acc.ID)))
 	}
 
-	b.WriteString("\n" + hintStyle.Render("e edit · b bind folder · * make default\nx export · u upload · t test · d delete"))
+	b.WriteString("\n" + hintStyle.Render("e edit · b bind · * default · l load\nx export · u upload · t test · d delete"))
 	return b.String()
 }
 

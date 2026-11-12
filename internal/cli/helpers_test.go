@@ -74,6 +74,9 @@ func (s *sandbox) newApp(cwd string) *app {
 			s.keychained = append(s.keychained, path)
 			return nil
 		},
+		loadKey: func(path string) error {
+			return keys.Add(path, strings.NewReader(s.stdin), &s.stdout, &s.stderr)
+		},
 		copy: func(text string) error {
 			s.copied = append(s.copied, text)
 			return nil

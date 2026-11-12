@@ -118,6 +118,33 @@ func CheckProtection(key Ref) Protection {
 	return Unencrypted
 }
 
+// HasSSHAdd reports whether ssh-add is installed on PATH.
+func HasSSHAdd() bool {
+	_, err := exec.LookPath("ssh-add")
+	return err == nil
+}
+
+// AgentRunning reports whether ssh-agent is running and reachable.
+func AgentRunning() bool {
+	cmd, finish := proc.Command(proc.Local, "ssh-add", "-l")
+	err := finish(cmd.Run())
+	var exitErr *exec.ExitError
+	return err == nil || (errors.As(err, &exitErr) && exitErr.ExitCode() == 1)
+}
+
+// Add loads the private key at key into ssh-agent. ssh-add asks for the
+// passphrase on the terminal through stdin, stdout and stderr when the key
+// has one.
+func Add(key string, stdin io.Reader, stdout, stderr io.Writer) error {
+	// ssh-add may ask for a passphrase, so it has no time limit.
+	cmd := exec.Command("ssh-add", key) //nolint:gosec // fixed binary; arguments built by doppel
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ssh-add: %w", err)
+	}
+	return nil
+}
+
 // InAgent reports whether ssh-agent holds key. running is false when there's
 // no agent to ask.
 func InAgent(key Ref) (loaded, running bool) {

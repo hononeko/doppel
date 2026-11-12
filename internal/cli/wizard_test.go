@@ -158,11 +158,21 @@ func TestRmAsksForANewDefault(t *testing.T) {
 
 func TestBrowserActions(t *testing.T) {
 	s := newSandbox(t)
+	s.FakeAgent()
+	signKey := s.Key("id_work_signing", "jane@acme.com", "pw")
 	s.addAccount("personal", "jane@personal.dev")
-	s.addAccount("work", "jane@acme.com")
+	s.addAccount("work", "jane@acme.com", "--signing-key", "~/.ssh/id_work_signing")
 	s.tty = true
 
 	a := s.newApp(s.Home)
+	if got, quit := a.runAction(tui.Action{Kind: tui.Load, ID: "work"}); got != "✓ Loaded signing key ~/.ssh/id_work_signing into agent" || quit {
+		t.Errorf("load: status %q", got)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != signKey {
+		t.Errorf("load ssh-add calls = %q, want %q", calls, signKey)
+	}
+
+	a = s.newApp(s.Home)
 	if got, quit := a.runAction(tui.Action{Kind: tui.SetDefault, ID: "work"}); got != "✓ work is now the default account" || quit {
 		t.Errorf("default: status %q", got)
 	}

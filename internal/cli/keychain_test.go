@@ -150,3 +150,24 @@ func TestDoctorChecksTheKeychain(t *testing.T) {
 		t.Errorf("doctor mentions the Keychain on Linux:\n%s", out)
 	}
 }
+
+func TestLoadUsesKeychainOnMac(t *testing.T) {
+	s := newSandbox(t)
+	s.fakeAppleSSH()
+	s.FakeAgent()
+	s.goos = "darwin"
+	locked := s.Key("id_locked", "jane@acme.com", "a passphrase")
+	plain := s.Key("id_plain", "jane@acme.com", "")
+	s.addAccount("work", "jane@acme.com", "--auth-key", "~/.ssh/id_plain", "--signing-key", "~/.ssh/id_locked")
+
+	out := s.mustRun("load", "work")
+	if !slices.Equal(s.keychained, []string{locked}) {
+		t.Errorf("keychained = %q, want [%s]", s.keychained, locked)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != plain {
+		t.Errorf("ssh-add calls = %q, want [%s]", calls, plain)
+	}
+	if !strings.Contains(out, "kept its passphrase in your Keychain") {
+		t.Errorf("output missing keychain note:\n%s", out)
+	}
+}

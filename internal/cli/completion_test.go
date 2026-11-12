@@ -35,8 +35,10 @@ func TestShellCompletion(t *testing.T) {
 		directive  string
 		exactCount int // when not 0, the number of candidates
 	}{
-		{[]string{""}, []string{"add", "edit", "completion", "whoami"}, []string{completeCommand, "list", "remove"}, ":words", 0},
+		{[]string{""}, []string{"add", "edit", "load", "completion", "whoami"}, []string{completeCommand, "list", "remove"}, ":words", 0},
 		{[]string{"edit", ""}, []string{"personal", "work"}, nil, ":words", 2},
+		{[]string{"load", ""}, []string{"personal", "work"}, nil, ":words", 2},
+		{[]string{"load", "work", "--"}, []string{"--auth", "--signing"}, nil, ":words", 2},
 		{[]string{"rename", "work", ""}, nil, nil, ":words", 0},
 		{[]string{"edit", "work", "--"}, []string{"--name", "--folder", "--auth-key", "--dry-run"}, []string{"--none"}, ":words", 0},
 		// a flag used already isn't offered again, unless it repeats

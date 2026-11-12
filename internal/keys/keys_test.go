@@ -239,3 +239,25 @@ func TestRef(t *testing.T) {
 		t.Errorf("Display = %q", got)
 	}
 }
+
+func TestAgentRunningAndAdd(t *testing.T) {
+	s := testenv.New(t)
+	if !keys.HasSSHAdd() {
+		t.Skip("ssh-add not installed")
+	}
+	if keys.AgentRunning() {
+		t.Fatal("AgentRunning = true with SSH_AUTH_SOCK unset")
+	}
+
+	key := s.Key("id_work", "jane@acme.com", "")
+	s.FakeAgent()
+	if !keys.AgentRunning() {
+		t.Fatal("AgentRunning = false with FakeAgent running")
+	}
+	if err := keys.Add(key, nil, nil, nil); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if got := strings.TrimSpace(s.Read("ssh-add-calls")); got != key {
+		t.Errorf("ssh-add called with %q, want %q", got, key)
+	}
+}
