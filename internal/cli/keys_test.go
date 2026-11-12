@@ -431,6 +431,7 @@ func TestEditWithOnlyKeyFlags(t *testing.T) {
 
 func TestLoadCommand(t *testing.T) {
 	s := newSandbox(t)
+	s.goos = "linux"
 	authKey := s.Key("id_work", "jane@acme.com", "pass1")
 	signKey := s.Key("id_work_signing", "jane@acme.com", "pass2")
 	s.addAccount("work", "jane@acme.com", "--auth-key", "~/.ssh/id_work", "--signing-key", "~/.ssh/id_work_signing")
@@ -523,11 +524,44 @@ func TestLoadCommand(t *testing.T) {
 		t.Errorf("interactive load signing ssh-add calls = %q", calls)
 	}
 
-	// Usage and missing-key errors.
+	// Interactive choices: 1 = Both keys, 2 = Auth key.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.stdin = script("1")
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work") || !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing") {
+		t.Errorf("interactive load both choice:\n%s", out)
+	}
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.stdin = script("2")
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work") || strings.Contains(out, "id_work_signing into") {
+		t.Errorf("interactive load auth choice:\n%s", out)
+	}
+
+	// Agent-only key paired with an on-disk key prints a warning for the agent-only key.
+	agentOnly := s.Key("id_agent", "jane@acme.com", "")
+	if err := os.Remove(agentOnly); err != nil {
+		t.Fatal(err)
+	}
+	s.addAccount("mixed", "jane@mixed.dev", "--auth-key", "~/.ssh/id_agent.pub", "--signing-key", "~/.ssh/id_work_signing")
 	s.tty = false
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.mustRun("load", "mixed")
+	if stderr := s.stderr.String(); !strings.Contains(stderr, "lives in an agent") {
+		t.Errorf("expected agent-only warning in stderr, got:\n%s", stderr)
+	}
+
+	// Usage, unknown-account, ssh-add failure, and missing-key errors.
 	s.mustFail(2, "load")
 	s.mustFail(2, "load", "work", "--auth", "--signing")
+	if stderr := s.mustFail(1, "load", "ghost"); !strings.Contains(stderr, "no account named ghost") {
+		t.Errorf("load ghost: %s", stderr)
+	}
 	if stderr := s.mustFail(1, "load", "empty"); !strings.Contains(stderr, "no keys to load") {
 		t.Errorf("load empty: %s", stderr)
+	}
+	s.FakeCommand("ssh-add", "if [ \"$1\" = \"-l\" ]; then exit 1; fi; exit 1")
+	if stderr := s.mustFail(1, "load", "work", "--signing"); !strings.Contains(stderr, "ssh-add:") {
+		t.Errorf("load ssh-add error: %s", stderr)
 	}
 }

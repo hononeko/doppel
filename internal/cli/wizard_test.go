@@ -164,6 +164,7 @@ func TestBrowserActions(t *testing.T) {
 	s.addAccount("work", "jane@acme.com", "--signing-key", "~/.ssh/id_work_signing")
 	s.tty = true
 
+	s.goos = "linux"
 	a := s.newApp(s.Home)
 	if got, quit := a.runAction(tui.Action{Kind: tui.Load, ID: "work"}); got != "✓ Loaded signing key ~/.ssh/id_work_signing into agent" || quit {
 		t.Errorf("load: status %q", got)
@@ -171,6 +172,7 @@ func TestBrowserActions(t *testing.T) {
 	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != signKey {
 		t.Errorf("load ssh-add calls = %q, want %q", calls, signKey)
 	}
+	s.goos = ""
 
 	a = s.newApp(s.Home)
 	if got, quit := a.runAction(tui.Action{Kind: tui.SetDefault, ID: "work"}); got != "✓ work is now the default account" || quit {
