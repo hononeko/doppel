@@ -123,6 +123,7 @@ It's a sibling of [sshx](https://github.com/hononeko/sshx): the same stack, look
   - doppel follows the includes itself, letting Git parse each file, so it can skip its own: the value the index sets isn't mistaken for the user's, and a damaged index can't stop doppel from rewriting it.
 - **R4.4a** If a signing key's public key can't be read when saving, doppel stops and names the fix (`doppel edit <id> --signing-key <key>` or `--no-signing`), rather than silently dropping that key from `allowed_signers`.
 - **R4.5** Signing check: sign and verify a test message with `ssh-keygen -Y sign` and `ssh-keygen -Y verify`, against the same `allowed_signers` file Git uses. `doppel test` runs it.
+- **R4.6 `load` (ssh-agent):** `doppel load <id> [--auth|--signing]` loads an account's existing key(s) from disk into `ssh-agent` with `ssh-add` (`ssh-add --apple-use-keychain` on macOS with Apple's `ssh` for passphrase-protected keys). Keys already in the agent are skipped and reported as already loaded. Agent-only keys (`.pub` without a private key on disk, or inline `key::...`) cannot be loaded from disk: if an account has both an agent-only key and an on-disk key, the agent-only key is skipped with a warning (unless already in the agent); otherwise `load` explains to unlock it in the agent. When interactive without `--auth` or `--signing` and two unloaded keys exist on disk, `load` asks whether to load both or just one.
 
 ### R5. Getting keys onto hosts
 
@@ -258,7 +259,7 @@ Checks everything that could make Git use the wrong account, and prints a one-li
 - **R9.1** `doppel` with no arguments opens an account browser in the style of sshx when both stdin and stdout are terminals and `ACCESSIBLE` is not set. Otherwise, or with `ACCESSIBLE` set, it prints `ls`.
   - **Left pane:** account IDs and emails, with the default marked ★; `/` filters.
   - **Right pane:** name, email, protocol, HTTPS user / helper (if configured), hosts, GitHub user, folders, keys with status badges (passphrase, in agent), signing, and the account file. On terminals narrower than 100 columns, Tab switches between the list and the details.
-  - **Keys:** edit (`enter`/`e`), add (`a`), delete (`d`, then `y` to confirm), bind a folder (`b`), make default (`*`), export (`x`), upload to GitHub (`u`), test (`t`), quit (`q`/`esc`).
+  - **Keys:** edit (`enter`/`e`), add (`a`), delete (`d`, then `y` to confirm), bind a folder (`b`), make default (`*`), load keys (`l`), export (`x`), upload to GitHub (`u`), test (`t`), quit (`q`/`esc`).
   - Each action leaves the browser, runs as its command would, and returns to the same account. A one-line result shows in the browser; output to read (`export`, `test`) and warnings or errors wait for Enter first.
 - **R9.1a** `doppel add` and `doppel edit <id>` without flags, in a terminal, walk through a wizard instead:
   - identity, hosts and GitHub user
@@ -311,6 +312,7 @@ doppel default [<id> | --none]           Show or set the default account
 doppel whoami [path] [--offline] [--json]
                                          Show which account applies here, and why
 doppel test [<id>]                       Log in to each host and sign a test message
+doppel load <id> [--auth|--signing]      Load the account's keys into ssh-agent
 doppel doctor [--fix]                    Check every account for problems; --fix brings doppel's files up to date
 doppel export <id> [--auth|--signing] [--no-copy]
                                          Print and copy a public key, with host instructions

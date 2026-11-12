@@ -144,6 +144,7 @@ doppel add work --name "Jane Doe" --email jane@acme.com --github-user jane-acme 
 | `doppel default [<id> \| --none]` | Shows or sets the default account |
 | `doppel whoami [path] [--offline] [--json]` | Shows which account applies, and why; tries the repo's host unless `--offline` |
 | `doppel test [<id>]` | Logs in to each host and signs and verifies a test message |
+| `doppel load <id> [--auth\|--signing]` | Loads the account's keys into `ssh-agent` (`--apple-use-keychain` on macOS) |
 | `doppel export <id> [--auth\|--signing] [--no-copy]` | Prints and copies a public key, with where to add it on each host (`--no-copy` only prints it) |
 | `doppel upload <id> [--auth\|--signing]` | Adds the keys to the account's GitHub user through `gh` |
 | `doppel doctor [--fix]` | Checks for anything that could make Git use the wrong account; `--fix` redoes doppel's own files |
@@ -178,6 +179,7 @@ Commands that change files accept `--dry-run` and `--yes`. Set `ACCESSIBLE=1` fo
 | `a` | Add an account |
 | `b` | Bind a folder |
 | `*` | Make it the default |
+| `l` | Load keys into `ssh-agent` |
 | `x` | Export a key |
 | `u` | Upload keys to GitHub |
 | `t` | Test logins and signing |

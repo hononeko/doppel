@@ -32,6 +32,7 @@ var commandSummaries = map[string]string{
 	"default":    "Show or set the default account",
 	"whoami":     "Show which account applies, and why",
 	"test":       "Log in to each host and sign a test message",
+	"load":       "Load account keys into ssh-agent",
 	"export":     "Print and copy a public key",
 	"upload":     "Add the account's keys to its GitHub user",
 	"doctor":     "Check for problems",
@@ -57,7 +58,7 @@ const (
 // positional says what a command's nth positional argument is.
 func positional(cmd string, n int) string {
 	switch cmd {
-	case "edit", "rm", "remove", "delete", "rename", "default", "test", "export", "upload":
+	case "edit", "rm", "remove", "delete", "rename", "default", "test", "load", "export", "upload":
 		if n == 0 {
 			return argAccount
 		}

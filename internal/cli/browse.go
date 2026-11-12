@@ -117,6 +117,8 @@ func (a *app) runAction(act tui.Action) (status string, quit bool) {
 		return a.status(a.remove(act.ID, writeFlags{yes: true})), false
 	case tui.SetDefault:
 		return a.status(a.setDefault(act.ID, writeFlags{})), false
+	case tui.Load:
+		return a.status(a.loadAccount(act.ID, false, false)), false
 	}
 	return "", false
 }

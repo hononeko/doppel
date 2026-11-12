@@ -428,3 +428,140 @@ func TestEditWithOnlyKeyFlags(t *testing.T) {
 		t.Errorf("core.sshCommand = %q after --auth-key \"\"", got)
 	}
 }
+
+func TestLoadCommand(t *testing.T) {
+	s := newSandbox(t)
+	s.goos = "linux"
+	authKey := s.Key("id_work", "jane@acme.com", "pass1")
+	signKey := s.Key("id_work_signing", "jane@acme.com", "pass2")
+	s.addAccount("work", "jane@acme.com", "--auth-key", "~/.ssh/id_work", "--signing-key", "~/.ssh/id_work_signing")
+	s.addAccount("same", "jane@same.dev", "--auth-key", "~/.ssh/id_work", "--sign-with-auth-key")
+	s.addAccount("https-sign", "jane@https.dev", "--protocol", "https", "--signing-key", "~/.ssh/id_work_signing")
+	s.addAccount("empty", "jane@empty.dev")
+
+	// Without a running ssh-agent, load reports why it can't load keys.
+	if stderr := s.mustFail(1, "load", "work", "--signing"); !strings.Contains(stderr, "no ssh-agent is running") {
+		t.Errorf("without agent: %s", stderr)
+	}
+
+	s.FakeAgent()
+	// Load only the signing key.
+	out := s.mustRun("load", "work", "--signing")
+	if !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing into your agent") {
+		t.Errorf("load --signing output:\n%s", out)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != signKey {
+		t.Errorf("ssh-add calls = %q, want %q", calls, signKey)
+	}
+
+	// Load only the auth key.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	out = s.mustRun("load", "work", "--auth")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work into your agent") {
+		t.Errorf("load --auth output:\n%s", out)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != authKey {
+		t.Errorf("ssh-add calls = %q, want %q", calls, authKey)
+	}
+
+	// Non-interactive without --auth or --signing loads both keys.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work") || !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing") {
+		t.Errorf("load both output:\n%s", out)
+	}
+	if calls := strings.Split(strings.TrimSpace(s.Read("ssh-add-calls")), "\n"); len(calls) != 2 || calls[0] != authKey || calls[1] != signKey {
+		t.Errorf("load both ssh-add calls = %q", calls)
+	}
+
+	// Same key for auth and signing is loaded once.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	out = s.mustRun("load", "same")
+	if !strings.Contains(out, "Loaded auth and signing key ~/.ssh/id_work into your agent") {
+		t.Errorf("load same output:\n%s", out)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != authKey {
+		t.Errorf("load same ssh-add calls = %q", calls)
+	}
+
+	// HTTPS account with a signing key loads the signing key; --auth fails.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	out = s.mustRun("load", "https-sign")
+	if !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing into your agent") {
+		t.Errorf("load https-sign output:\n%s", out)
+	}
+	if stderr := s.mustFail(1, "load", "https-sign", "--auth"); !strings.Contains(stderr, "uses HTTPS and has no auth key") {
+		t.Errorf("load https-sign --auth: %s", stderr)
+	}
+
+	// Already loaded keys are skipped.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.FakeAgent(authKey)
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Already in your agent: auth key ~/.ssh/id_work") || !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing") {
+		t.Errorf("load with auth already in agent:\n%s", out)
+	}
+	var loaded []string
+	for _, line := range strings.Split(strings.TrimSpace(s.Read("ssh-add-calls")), "\n") {
+		if line != "-l" {
+			loaded = append(loaded, line)
+		}
+	}
+	if len(loaded) != 1 || loaded[0] != signKey {
+		t.Errorf("expected only signing key loaded, got %q", loaded)
+	}
+
+	// Interactive without flags when two unloaded keys exist asks which to load (3 = Signing key).
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.FakeAgent()
+	s.tty = true
+	s.stdin = script("3")
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing into your agent") || strings.Contains(out, "id_work into") {
+		t.Errorf("interactive load signing choice:\n%s", out)
+	}
+	if calls := strings.TrimSpace(s.Read("ssh-add-calls")); calls != signKey {
+		t.Errorf("interactive load signing ssh-add calls = %q", calls)
+	}
+
+	// Interactive choices: 1 = Both keys, 2 = Auth key.
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.stdin = script("1")
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work") || !strings.Contains(out, "Loaded signing key ~/.ssh/id_work_signing") {
+		t.Errorf("interactive load both choice:\n%s", out)
+	}
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.stdin = script("2")
+	out = s.mustRun("load", "work")
+	if !strings.Contains(out, "Loaded auth key ~/.ssh/id_work") || strings.Contains(out, "id_work_signing into") {
+		t.Errorf("interactive load auth choice:\n%s", out)
+	}
+
+	// Agent-only key paired with an on-disk key prints a warning for the agent-only key.
+	agentOnly := s.Key("id_agent", "jane@acme.com", "")
+	if err := os.Remove(agentOnly); err != nil {
+		t.Fatal(err)
+	}
+	s.addAccount("mixed", "jane@mixed.dev", "--auth-key", "~/.ssh/id_agent.pub", "--signing-key", "~/.ssh/id_work_signing")
+	s.tty = false
+	_ = os.Remove(s.Path("ssh-add-calls"))
+	s.mustRun("load", "mixed")
+	if stderr := s.stderr.String(); !strings.Contains(stderr, "lives in an agent") {
+		t.Errorf("expected agent-only warning in stderr, got:\n%s", stderr)
+	}
+
+	// Usage, unknown-account, ssh-add failure, and missing-key errors.
+	s.mustFail(2, "load")
+	s.mustFail(2, "load", "work", "--auth", "--signing")
+	if stderr := s.mustFail(1, "load", "ghost"); !strings.Contains(stderr, "no account named ghost") {
+		t.Errorf("load ghost: %s", stderr)
+	}
+	if stderr := s.mustFail(1, "load", "empty"); !strings.Contains(stderr, "no keys to load") {
+		t.Errorf("load empty: %s", stderr)
+	}
+	s.FakeCommand("ssh-add", "if [ \"$1\" = \"-l\" ]; then exit 1; fi; exit 1")
+	if stderr := s.mustFail(1, "load", "work", "--signing"); !strings.Contains(stderr, "ssh-add:") {
+		t.Errorf("load ssh-add error: %s", stderr)
+	}
+}

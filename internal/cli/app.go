@@ -38,6 +38,7 @@ type app struct {
 
 	generate func(path, comment string) error // creates a key, asking for its passphrase
 	keychain func(path string) error          // keeps a key's passphrase in the macOS Keychain, asking for it
+	loadKey  func(path string) error          // loads a key into ssh-agent, asking for its passphrase
 	copy     func(text string) error          // puts text on the clipboard
 
 	unlock func() // releases the write lock while this command holds it
@@ -189,6 +190,9 @@ func newApp() (*app, error) {
 		keychain: func(path string) error {
 			return keys.AddToKeychain(path, os.Stdin, os.Stdout, os.Stderr)
 		},
+		loadKey: func(path string) error {
+			return keys.Add(path, os.Stdin, os.Stdout, os.Stderr)
+		},
 		copy:   copyToClipboard,
 		github: &hosts.GitHub{},
 	}, nil
@@ -263,6 +267,7 @@ func (a *app) commands() map[string]func([]string) int {
 		"unbind":    a.cmdUnbind,
 		"default":   a.cmdDefault,
 		"whoami":    a.cmdWhoami,
+		"load":      a.cmdLoad,
 		"export":    a.cmdExport,
 		"upload":    a.cmdUpload,
 		"doctor":    a.cmdDoctor,
@@ -291,6 +296,7 @@ func (a *app) printUsage() {
   doppel whoami [path] [--offline] [--json]
                                          Show which account applies, and why
   doppel test [<id>]                     Log in to each host and sign a test message
+  doppel load <id> [--auth|--signing]    Load the account's keys into ssh-agent
   doppel export <id> [--auth|--signing]
              [--no-copy]                 Print and copy a public key, with where to add it
   doppel upload <id> [--auth|--signing]  Add the account's keys to its GitHub user (with gh)
