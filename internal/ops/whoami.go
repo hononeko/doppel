@@ -255,3 +255,54 @@ func RemoteLogin(ctx Context, acc *accounts.Account, repo string) (c Check, ok b
 	}
 	return Login(ctx, acc, host), true
 }
+
+// RemoteSwitch describes how to change a repo's main remote to match an
+// account's allowed protocol.
+type RemoteSwitch struct {
+	Remote  string
+	Target  string // "SSH" or "HTTPS"
+	Command string
+	Updates []hosts.RemoteUpdate
+}
+
+// MismatchedRemote reports the set-url updates needed when repo's main remote
+// uses a protocol acc doesn't allow and doppel can convert it.
+func MismatchedRemote(acc *accounts.Account, repo string) (RemoteSwitch, bool) {
+	if acc == nil {
+		return RemoteSwitch{}, false
+	}
+	remote, ok := hosts.MainRemote(repo)
+	if !ok || remote.FetchURL == "" {
+		return RemoteSwitch{}, false
+	}
+	var target, cmd string
+	var updates []hosts.RemoteUpdate
+	switch {
+	case !acc.AllowsHTTPS() && hosts.IsHTTP(remote.FetchURL):
+		target = "SSH"
+		updates = hosts.UpdatesToSSH(remote)
+		cmd = hosts.SwitchToSSH(remote, "")
+	case !acc.AllowsSSH() && hosts.SSHHost(remote.FetchURL) != "":
+		target = "HTTPS"
+		updates = hosts.UpdatesToHTTPS(remote)
+		cmd = hosts.SwitchToHTTPS(remote, "")
+	default:
+		return RemoteSwitch{}, false
+	}
+	if len(updates) == 0 {
+		return RemoteSwitch{}, false
+	}
+	return RemoteSwitch{Remote: remote.Name, Target: target, Command: cmd, Updates: updates}, true
+}
+
+// SwitchRemote switches repo's main remote to match acc's allowed protocol.
+func SwitchRemote(acc *accounts.Account, repo string) (RemoteSwitch, bool, error) {
+	sw, ok := MismatchedRemote(acc, repo)
+	if !ok {
+		return RemoteSwitch{}, false, nil
+	}
+	if err := hosts.ApplyRemoteUpdates(repo, sw.Updates); err != nil {
+		return sw, true, err
+	}
+	return sw, true, nil
+}

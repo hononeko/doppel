@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
 )
 
 func TestWhoami(t *testing.T) {
@@ -201,5 +202,61 @@ func TestWhoamiStaleIndex(t *testing.T) {
 	}
 	if id.StaleIndex || id.Account != "work" {
 		t.Errorf("after fix: StaleIndex = %v, Account = %s", id.StaleIndex, id.Account)
+	}
+}
+
+func TestWhoamiFixAndInteractiveRemoteSwitch(t *testing.T) {
+	s := newSandbox(t)
+	s.FakeSSH("Hi jane-acme! You've successfully authenticated, but GitHub does not provide shell access.")
+	s.Key("id_work", "jane@acme.com", "")
+	s.addAccount("work", "jane@acme.com", "--folder", "~/work", "--auth-key", "~/.ssh/id_work")
+	s.addAccount("web", "jane@web.dev", "--folder", "~/web", "--protocol", "https")
+
+	sshRepo := s.GitInit("work/api")
+	if _, err := git.Run(sshRepo, "remote", "add", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	httpsRepo := s.GitInit("web/site")
+	if _, err := git.Run(httpsRepo, "remote", "add", "origin", "git@github.com:acme/site.git"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Interactive decline keeps the remote unchanged.
+	s.tty = true
+	s.stdin = script("n")
+	out := s.mustRun("whoami", "work/api")
+	if !strings.Contains(out, "Switch origin remote to SSH?") {
+		t.Errorf("missing interactive prompt:\n%s", out)
+	}
+	if r, _ := hosts.MainRemote(sshRepo); r.FetchURL != "https://github.com/acme/api.git" {
+		t.Errorf("declined remote changed to %+v", r)
+	}
+
+	// Interactive accept switches to SSH.
+	s.stdin = script("y")
+	out = s.mustRun("whoami", "work/api")
+	if !strings.Contains(out, "Switched origin remote to git@github.com:acme/api.git") {
+		t.Errorf("missing switch confirmation:\n%s", out)
+	}
+	if r, _ := hosts.MainRemote(sshRepo); r.FetchURL != "git@github.com:acme/api.git" {
+		t.Errorf("accepted remote = %+v", r)
+	}
+
+	// Non-interactive --fix switches HTTPS-only account's SSH remote (fetch + push) and SSH-only account's HTTPS remote.
+	s.tty = false
+	if _, err := git.Run(sshRepo, "remote", "set-url", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	out = s.mustRun("whoami", "work/api", "--fix")
+	if !strings.Contains(out, "Switched origin remote to git@github.com:acme/api.git") || !strings.Contains(out, "Login     ✓ github.com: logged in as jane-acme") {
+		t.Errorf("whoami --fix (SSH) output:\n%s", out)
+	}
+
+	out = s.mustRun("whoami", "web/site", "--fix")
+	if !strings.Contains(out, "Switched origin remote to https://github.com/acme/site.git") {
+		t.Errorf("whoami --fix (HTTPS) output:\n%s", out)
+	}
+	if r, _ := hosts.MainRemote(httpsRepo); r.FetchURL != "https://github.com/acme/site.git" {
+		t.Errorf("web/site remote after --fix = %+v", r)
 	}
 }

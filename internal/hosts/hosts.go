@@ -209,25 +209,76 @@ func SSHURL(url string) (ssh string, ok bool) {
 	return "git@" + hostPart + ":" + path, true
 }
 
+// RemoteUpdate is one `git remote set-url` operation switching a remote URL.
+type RemoteUpdate struct {
+	Remote   string
+	PushOnly bool // true when setting push URL separately (--push)
+	URL      string
+}
+
+// UpdatesToSSH returns the set-url operations to switch r's HTTPS URLs to SSH.
+func UpdatesToSSH(r Remote) []RemoteUpdate {
+	return switchUpdates(r, SSHURL)
+}
+
+// UpdatesToHTTPS returns the set-url operations to switch r's SSH URLs to HTTPS.
+func UpdatesToHTTPS(r Remote) []RemoteUpdate {
+	return switchUpdates(r, HTTPSURL)
+}
+
+func switchUpdates(r Remote, convert func(string) (string, bool)) []RemoteUpdate {
+	var updates []RemoteUpdate
+	if converted, ok := convert(r.FetchURL); ok {
+		updates = append(updates, RemoteUpdate{Remote: r.Name, URL: converted})
+	}
+	if r.PushURL != r.FetchURL {
+		if converted, ok := convert(r.PushURL); ok {
+			updates = append(updates, RemoteUpdate{Remote: r.Name, PushOnly: true, URL: converted})
+		}
+	}
+	return updates
+}
+
+func formatSwitch(updates []RemoteUpdate, dir string) string {
+	if len(updates) == 0 {
+		return ""
+	}
+	cmd := "git"
+	if dir != "" {
+		cmd += " -C " + shellArg(dir)
+	}
+	commands := make([]string, 0, len(updates))
+	for _, u := range updates {
+		setURL := " remote set-url "
+		if u.PushOnly {
+			setURL += "--push "
+		}
+		commands = append(commands, cmd+setURL+shellArg(u.Remote)+" "+u.URL)
+	}
+	return strings.Join(commands, " && ")
+}
+
+// ApplyRemoteUpdates runs `git remote set-url` in repo for each update.
+func ApplyRemoteUpdates(repo string, updates []RemoteUpdate) error {
+	for _, u := range updates {
+		args := []string{"remote", "set-url"}
+		if u.PushOnly {
+			args = append(args, "--push")
+		}
+		args = append(args, u.Remote, u.URL)
+		if _, err := git.Run(repo, args...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SwitchToSSH returns the command that switches a remote's HTTPS URLs to
 // SSH, or "" when there's nothing it can switch. dir is the repo the
 // command runs in, as the user would type it; "" leaves out -C, for a
 // command run inside the repo.
 func SwitchToSSH(r Remote, dir string) string {
-	git := "git"
-	if dir != "" {
-		git += " -C " + shellArg(dir)
-	}
-	var commands []string
-	if ssh, ok := SSHURL(r.FetchURL); ok {
-		commands = append(commands, git+" remote set-url "+shellArg(r.Name)+" "+ssh)
-	}
-	if r.PushURL != r.FetchURL {
-		if ssh, ok := SSHURL(r.PushURL); ok {
-			commands = append(commands, git+" remote set-url --push "+shellArg(r.Name)+" "+ssh)
-		}
-	}
-	return strings.Join(commands, " && ")
+	return formatSwitch(UpdatesToSSH(r), dir)
 }
 
 // HTTPSURL returns the HTTPS form of an SSH remote (git@host:path or
@@ -273,20 +324,7 @@ func HTTPSURL(url string) (https string, ok bool) {
 // command runs in, as the user would type it; "" leaves out -C, for a
 // command run inside the repo.
 func SwitchToHTTPS(r Remote, dir string) string {
-	git := "git"
-	if dir != "" {
-		git += " -C " + shellArg(dir)
-	}
-	var commands []string
-	if https, ok := HTTPSURL(r.FetchURL); ok {
-		commands = append(commands, git+" remote set-url "+shellArg(r.Name)+" "+https)
-	}
-	if r.PushURL != r.FetchURL {
-		if https, ok := HTTPSURL(r.PushURL); ok {
-			commands = append(commands, git+" remote set-url --push "+shellArg(r.Name)+" "+https)
-		}
-	}
-	return strings.Join(commands, " && ")
+	return formatSwitch(UpdatesToHTTPS(r), dir)
 }
 
 var shellSafe = regexp.MustCompile(`^[A-Za-z0-9_./~@%+=:,-]+$`)

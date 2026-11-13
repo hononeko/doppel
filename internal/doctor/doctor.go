@@ -29,12 +29,40 @@ const (
 	Problem                 // Git may use the wrong account, or fail
 )
 
+// String returns the lowercase name of s ("ok", "note", "warning", "problem").
+func (s Severity) String() string {
+	switch s {
+	case OK:
+		return "ok"
+	case Note:
+		return "note"
+	case Warning:
+		return "warning"
+	case Problem:
+		return "problem"
+	default:
+		return fmt.Sprintf("severity(%d)", int(s))
+	}
+}
+
+// RemoteMismatch describes a repo whose remotes don't match its account's
+// allowed protocol, together with the set-url operations to switch them.
+type RemoteMismatch struct {
+	Repo    string               // full path to the repository
+	Dir     string               // shortened path for display
+	Target  string               // "SSH" or "HTTPS"
+	Command string               // shell command(s), or "" if non-convertible
+	Updates []hosts.RemoteUpdate // structured set-url operations
+}
+
 // Finding is one result of a check.
 type Finding struct {
 	Severity Severity
 	Area     string // what was checked: "Git and SSH", "Git config", or "Account <id>"
 	Message  string
 	Fix      string // one line saying how to fix it; "" when there's nothing to do
+	// Remote is set when this finding describes a convertible remote protocol mismatch.
+	Remote *RemoteMismatch
 }
 
 // Count returns how many findings have severity s.
@@ -60,6 +88,9 @@ type Options struct {
 	// checked, through store.Save like any other write. The caller holds
 	// the write lock from before it loaded the accounts.
 	Fix bool
+	// FixRemotes switches mismatched repo remote URLs in bound folders to match
+	// each account's allowed protocol when doppel can convert them.
+	FixRemotes bool
 	// Cwd is the current working directory where doctor was run.
 	Cwd string
 }
@@ -270,31 +301,9 @@ func (c *checker) account(acc *accounts.Account) {
 	}
 
 	if !acc.AllowsHTTPS() {
-		repos := httpsRepos(env, acc.Folders)
-		for i, r := range repos {
-			if i == maxHTTPSRepos {
-				c.warn("Switch these first, then run doctor again to see the rest", "…and %s in its folders use HTTPS", Plural(len(repos)-i, "more repo"))
-				break
-			}
-			fix := "Switch it to SSH: " + r.fix
-			if r.fix == "" {
-				fix = "Switch it to SSH: git -C " + r.dir + " remote set-url <remote> git@<host>:<owner>/<repo>.git"
-			}
-			c.warn(fix, "%s fetches over HTTPS, which doppel's keys don't cover", r.dir)
-		}
+		c.checkRemoteProtocol(acc, "SSH")
 	} else if !acc.AllowsSSH() {
-		repos := sshRepos(env, acc.Folders)
-		for i, r := range repos {
-			if i == maxHTTPSRepos {
-				c.warn("Switch these first, then run doctor again to see the rest", "…and %s in its folders use SSH", Plural(len(repos)-i, "more repo"))
-				break
-			}
-			fix := "Switch it to HTTPS: " + r.fix
-			if r.fix == "" {
-				fix = "Switch it to HTTPS: git -C " + r.dir + " remote set-url <remote> https://<host>/<owner>/<repo>.git"
-			}
-			c.warn(fix, "%s fetches over SSH, but %s is configured for HTTPS only", r.dir, acc.ID)
-		}
+		c.checkRemoteProtocol(acc, "HTTPS")
 	}
 
 	if acc.AllowsHTTPS() && acc.EffectiveHTTPSUser() == "" {
@@ -430,18 +439,81 @@ func (c *checker) sharedAuthKey(acc *accounts.Account) (string, string) {
 	return "", ""
 }
 
-// maxHTTPSRepos is how many HTTPS repos doctor names in each account's
-// folders before it only counts the rest.
+// maxHTTPSRepos is how many mismatched-protocol repos doctor names in each
+// account's folders before it only counts the rest.
 const maxHTTPSRepos = 5
 
-// httpsRepo is a repo with a remote over HTTPS, and the command that
-// switches its remotes to SSH ("" when doppel can't work it out).
-type httpsRepo struct{ dir, fix string }
+func (c *checker) checkRemoteProtocol(acc *accounts.Account, target string) {
+	repos := mismatchedRepos(c.Env, acc.Folders, target)
+	shown := 0
+	for i := range repos {
+		r := repos[i]
+		if c.FixRemotes && len(r.Updates) > 0 {
+			if err := ApplyRemoteFix(&r); err == nil {
+				c.ok("Switched %s remotes to %s", r.Dir, r.Target)
+				continue
+			}
+		}
+		if shown == maxHTTPSRepos {
+			other := "HTTPS"
+			if target == "HTTPS" {
+				other = "SSH"
+			}
+			c.warn("Switch these first, then run doctor again to see the rest", "…and %s in its folders use %s", Plural(len(repos)-i, "more repo"), other)
+			break
+		}
+		shown++
+		fix := "Switch it to " + target + ": " + r.Command
+		if r.Command == "" {
+			if target == "SSH" {
+				fix = "Switch it to SSH: git -C " + r.Dir + " remote set-url <remote> git@<host>:<owner>/<repo>.git"
+			} else {
+				fix = "Switch it to HTTPS: git -C " + r.Dir + " remote set-url <remote> https://<host>/<owner>/<repo>.git"
+			}
+		}
+		msg := fmt.Sprintf("%s fetches over HTTPS, which doppel's keys don't cover", r.Dir)
+		if target == "HTTPS" {
+			msg = fmt.Sprintf("%s fetches over SSH, but %s is configured for HTTPS only", r.Dir, acc.ID)
+		}
+		var remote *RemoteMismatch
+		if len(r.Updates) > 0 {
+			copyR := r
+			remote = &copyR
+		}
+		c.findings = append(c.findings, Finding{
+			Severity: Warning,
+			Area:     c.area,
+			Message:  msg,
+			Fix:      fix,
+			Remote:   remote,
+		})
+	}
+}
 
-// httpsRepos finds repos in folders with a remote over HTTPS. It looks three
-// levels deep and skips hidden and dependency folders, so big trees stay quick.
-func httpsRepos(env *paths.Env, folders []string) []httpsRepo {
-	var found []httpsRepo
+// RemoteFixes returns all convertible remote mismatches referenced by findings.
+func RemoteFixes(findings []Finding) []*RemoteMismatch {
+	var fixes []*RemoteMismatch
+	for _, f := range findings {
+		if f.Remote != nil && len(f.Remote.Updates) > 0 {
+			fixes = append(fixes, f.Remote)
+		}
+	}
+	return fixes
+}
+
+// ApplyRemoteFix updates a repo's mismatched remotes according to m.
+func ApplyRemoteFix(m *RemoteMismatch) error {
+	if m == nil || len(m.Updates) == 0 {
+		return nil
+	}
+	return hosts.ApplyRemoteUpdates(m.Repo, m.Updates)
+}
+
+// mismatchedRepos finds repos in folders whose remotes don't match target
+// ("SSH" or "HTTPS"). It looks three levels deep and skips hidden and
+// dependency folders, so big trees stay quick.
+func mismatchedRepos(env *paths.Env, folders []string, target string) []RemoteMismatch {
+	var found []RemoteMismatch
 	for _, f := range folders {
 		visited := 0
 		var walk func(dir string, depth int)
@@ -451,7 +523,7 @@ func httpsRepos(env *paths.Env, folders []string) []httpsRepo {
 			}
 			visited++
 			if paths.FileExists(filepath.Join(dir, ".git")) {
-				if r, ok := httpsRemotes(env, dir); ok {
+				if r, ok := inspectRepoRemotes(env, dir, target); ok {
 					found = append(found, r)
 				}
 				return
@@ -472,78 +544,38 @@ func httpsRepos(env *paths.Env, folders []string) []httpsRepo {
 	return found
 }
 
-// httpsRemotes checks a repo's remotes. ok is true when one uses HTTPS.
-func httpsRemotes(env *paths.Env, dir string) (repo httpsRepo, ok bool) {
-	repo.dir = env.Shorten(dir)
-	var fixes []string
+// inspectRepoRemotes checks a repo's remotes for URLs that need switching to
+// target ("SSH" or "HTTPS").
+func inspectRepoRemotes(env *paths.Env, dir, target string) (repo RemoteMismatch, ok bool) {
+	repo = RemoteMismatch{Repo: dir, Dir: env.Shorten(dir), Target: target}
+	var cmds []string
 	for _, r := range hosts.Remotes(dir) {
-		if !hosts.IsHTTP(r.FetchURL) && !hosts.IsHTTP(r.PushURL) {
-			continue
+		var updates []hosts.RemoteUpdate
+		var cmd string
+		if target == "SSH" {
+			if !hosts.IsHTTP(r.FetchURL) && !hosts.IsHTTP(r.PushURL) {
+				continue
+			}
+			ok = true
+			updates = hosts.UpdatesToSSH(r)
+			cmd = hosts.SwitchToSSH(r, repo.Dir)
+		} else {
+			if hosts.IsHTTP(r.FetchURL) && hosts.IsHTTP(r.PushURL) {
+				continue
+			}
+			if hosts.SSHHost(r.FetchURL) == "" && hosts.SSHHost(r.PushURL) == "" {
+				continue
+			}
+			ok = true
+			updates = hosts.UpdatesToHTTPS(r)
+			cmd = hosts.SwitchToHTTPS(r, repo.Dir)
 		}
-		ok = true
-		if fix := hosts.SwitchToSSH(r, repo.dir); fix != "" {
-			fixes = append(fixes, fix)
+		repo.Updates = append(repo.Updates, updates...)
+		if cmd != "" {
+			cmds = append(cmds, cmd)
 		}
 	}
-	repo.fix = strings.Join(fixes, " && ")
-	return repo, ok
-}
-
-// sshRepo is a repo with a remote over SSH, and the command that
-// switches its remotes to HTTPS ("" when doppel can't work it out).
-type sshRepo struct{ dir, fix string }
-
-// sshRepos finds repos in folders with a remote over SSH. It looks three
-// levels deep and skips hidden and dependency folders, so big trees stay quick.
-func sshRepos(env *paths.Env, folders []string) []sshRepo {
-	var found []sshRepo
-	for _, f := range folders {
-		visited := 0
-		var walk func(dir string, depth int)
-		walk = func(dir string, depth int) {
-			if visited >= 2000 || depth > 3 {
-				return
-			}
-			visited++
-			if paths.FileExists(filepath.Join(dir, ".git")) {
-				if r, ok := sshRemotes(env, dir); ok {
-					found = append(found, r)
-				}
-				return
-			}
-			entries, err := os.ReadDir(dir)
-			if err != nil {
-				return
-			}
-			for _, e := range entries {
-				name := e.Name()
-				if e.IsDir() && !strings.HasPrefix(name, ".") && name != "node_modules" && name != "vendor" {
-					walk(filepath.Join(dir, name), depth+1)
-				}
-			}
-		}
-		walk(strings.TrimSuffix(env.Expand(f), "/"), 0)
-	}
-	return found
-}
-
-// sshRemotes checks a repo's remotes. ok is true when one uses SSH.
-func sshRemotes(env *paths.Env, dir string) (repo sshRepo, ok bool) {
-	repo.dir = env.Shorten(dir)
-	var fixes []string
-	for _, r := range hosts.Remotes(dir) {
-		if hosts.IsHTTP(r.FetchURL) && hosts.IsHTTP(r.PushURL) {
-			continue
-		}
-		if hosts.SSHHost(r.FetchURL) == "" && hosts.SSHHost(r.PushURL) == "" {
-			continue
-		}
-		ok = true
-		if fix := hosts.SwitchToHTTPS(r, repo.dir); fix != "" {
-			fixes = append(fixes, fix)
-		}
-	}
-	repo.fix = strings.Join(fixes, " && ")
+	repo.Command = strings.Join(cmds, " && ")
 	return repo, ok
 }
 

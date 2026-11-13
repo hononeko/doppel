@@ -7,12 +7,35 @@ import (
 	"github.com/hononeko/doppel/internal/ui"
 )
 
-const testUsage = "doppel test [<id>]"
+const testUsage = "doppel test [<id>] [--json]"
+
+type testCheckJSON struct {
+	Label   string `json:"label"`
+	OK      bool   `json:"ok"`
+	Skipped bool   `json:"skipped"`
+	Detail  string `json:"detail"`
+	Fix     string `json:"fix,omitempty"`
+}
+
+type testAccountJSON struct {
+	Account string          `json:"account"`
+	OK      bool            `json:"ok"`
+	Checks  []testCheckJSON `json:"checks"`
+	Hints   []string        `json:"hints,omitempty"`
+}
+
+type testJSON struct {
+	Accounts []testAccountJSON `json:"accounts"`
+	OK       bool              `json:"ok"`
+}
 
 // cmdTest tries each account's keys for real: it logs in to every host and
 // signs a test message, then verifies it as Git would.
 func (a *app) cmdTest(args []string) int {
-	positional, code, ok := a.parseCommand(newFlagSet("test"), args, testUsage)
+	fs := newFlagSet("test")
+	var asJSON bool
+	fs.BoolVar(&asJSON, "json", false, "output test results as JSON")
+	positional, code, ok := a.parseCommand(fs, args, testUsage)
 	if !ok {
 		return code
 	}
@@ -31,6 +54,9 @@ func (a *app) cmdTest(args []string) int {
 		list = []*accounts.Account{acc}
 	}
 	if len(list) == 0 {
+		if asJSON {
+			return a.printJSON(testJSON{Accounts: []testAccountJSON{}, OK: true})
+		}
 		a.printf("No accounts to test.\n")
 		return 0
 	}
@@ -41,7 +67,30 @@ func (a *app) cmdTest(args []string) int {
 
 	ctx := a.opsContext(writeFlags{})
 	failed := false
+	jsonAccounts := make([]testAccountJSON, 0, len(list))
 	for i, acc := range list {
+		if asJSON {
+			checks := []testCheckJSON{}
+			accFailed := ops.Test(ctx, acc, signers, func(c ops.Check) {
+				checks = append(checks, testCheckJSON{
+					Label:   c.Label,
+					OK:      c.OK,
+					Skipped: c.Skipped,
+					Detail:  c.Detail,
+					Fix:     c.Fix,
+				})
+			})
+			if accFailed {
+				failed = true
+			}
+			jsonAccounts = append(jsonAccounts, testAccountJSON{
+				Account: acc.ID,
+				OK:      !accFailed,
+				Checks:  checks,
+				Hints:   ops.KeychainHints(ctx, acc.AuthKey, acc.SigningKey),
+			})
+			continue
+		}
 		if i > 0 {
 			a.printf("\n")
 		}
@@ -54,6 +103,11 @@ func (a *app) cmdTest(args []string) int {
 			for _, hint := range ops.KeychainHints(ctx, acc.AuthKey, acc.SigningKey) {
 				a.notef("  %s", hint)
 			}
+		}
+	}
+	if asJSON {
+		if code := a.printJSON(testJSON{Accounts: jsonAccounts, OK: !failed}); code != 0 {
+			return code
 		}
 	}
 	if failed {

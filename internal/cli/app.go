@@ -293,14 +293,15 @@ func (a *app) printUsage() {
   doppel bind <id> <folder>...           Use an account for repos in these folders
   doppel unbind <folder>...              Remove folder rules
   doppel default [<id> | --none]         Show or set the default account
-  doppel whoami [path] [--offline] [--json]
+  doppel whoami [path] [--offline] [--fix] [--json]
                                          Show which account applies, and why
-  doppel test [<id>]                     Log in to each host and sign a test message
+  doppel test [<id>] [--json]            Log in to each host and sign a test message
   doppel load <id> [--auth|--signing]    Load the account's keys into ssh-agent
   doppel export <id> [--auth|--signing]
              [--no-copy]                 Print and copy a public key, with where to add it
   doppel upload <id> [--auth|--signing]  Add the account's keys to its GitHub user (with gh)
-  doppel doctor [--fix]                  Check every account for problems
+  doppel doctor [--fix] [--fix-remotes] [--json]
+                                         Check every account for problems
   doppel update [--check] [--force]      Install the latest signed release (--check only
                                          looks, --force reinstalls the current one)
   doppel uninstall                       Take doppel's blocks out of your Git config and

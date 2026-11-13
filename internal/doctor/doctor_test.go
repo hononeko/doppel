@@ -259,3 +259,58 @@ func TestCheckIDESettings(t *testing.T) {
 		t.Errorf("expected repo .vscode OK, got findings:\n%+v", findings)
 	}
 }
+
+func TestRemoteFixesAndSeverityString(t *testing.T) {
+	for s, want := range map[doctor.Severity]string{
+		doctor.OK:          "ok",
+		doctor.Note:        "note",
+		doctor.Warning:     "warning",
+		doctor.Problem:     "problem",
+		doctor.Severity(9): "severity(9)",
+	} {
+		if got := s.String(); got != want {
+			t.Errorf("%d.String() = %q, want %q", s, got, want)
+		}
+	}
+
+	s := testenv.New(t)
+	env := s.Env()
+	env.GOOS = "linux"
+	s.Key("id_work", "jane@acme.com", "pw")
+	s.FakeAgent(s.Path(".ssh/id_work"))
+
+	sshRepo := s.GitInit("ssh-work/api")
+	if _, err := git.Run(sshRepo, "remote", "add", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	httpsRepo := s.GitInit("https-work/web")
+	if _, err := git.Run(httpsRepo, "remote", "add", "origin", "git@github.com:acme/web.git"); err != nil {
+		t.Fatal(err)
+	}
+
+	list := []*accounts.Account{
+		{ID: "work", Name: "Jane", Email: "jane@acme.com", Protocol: accounts.ProtocolSSH, Hosts: []string{"github.com"}, AuthKey: "~/.ssh/id_work", Folders: []string{"~/ssh-work/"}},
+		{ID: "web", Name: "Jane", Email: "jane@web.dev", Protocol: accounts.ProtocolHTTPS, Folders: []string{"~/https-work/"}},
+	}
+
+	findings := doctor.Check(doctor.Options{Env: env, Accounts: list, GitHub: &hosts.GitHub{}})
+	fixes := doctor.RemoteFixes(findings)
+	if len(fixes) != 2 {
+		t.Fatalf("RemoteFixes = %d, want 2: %+v", len(fixes), fixes)
+	}
+	if err := doctor.ApplyRemoteFix(nil); err != nil {
+		t.Errorf("ApplyRemoteFix(nil) = %v", err)
+	}
+
+	// FixRemotes rewrites both mismatched remotes and emits OK findings.
+	findings = doctor.Check(doctor.Options{Env: env, Accounts: list, GitHub: &hosts.GitHub{}, FixRemotes: true})
+	if rem := doctor.RemoteFixes(findings); len(rem) != 0 {
+		t.Errorf("remaining fixes after FixRemotes: %+v", rem)
+	}
+	if got, _ := hosts.MainRemote(sshRepo); got.FetchURL != "git@github.com:acme/api.git" {
+		t.Errorf("sshRepo remote = %+v", got)
+	}
+	if got, _ := hosts.MainRemote(httpsRepo); got.FetchURL != "https://github.com/acme/web.git" {
+		t.Errorf("httpsRepo remote = %+v", got)
+	}
+}

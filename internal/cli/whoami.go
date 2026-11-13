@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"charm.land/huh/v2"
 	"github.com/hononeko/doppel/internal/accounts"
 	"github.com/hononeko/doppel/internal/ops"
 	"github.com/hononeko/doppel/internal/ui"
 )
 
-const whoamiUsage = "doppel whoami [path] [--offline] [--json]"
+const whoamiUsage = "doppel whoami [path] [--offline] [--fix] [--json]"
 
 // whoamiJSON is the machine-readable representation of identity for `doppel whoami --json`.
 type whoamiJSON struct {
@@ -47,9 +48,9 @@ type whoamiLoginJSON struct {
 
 func (a *app) cmdWhoami(args []string) int {
 	fs := newFlagSet("whoami")
-	var offline bool
-	var asJSON bool
+	var offline, fix, asJSON bool
 	fs.BoolVar(&offline, "offline", false, "don't try logging in to the repo's host")
+	fs.BoolVar(&fix, "fix", false, "switch a mismatched remote URL to match the account's protocol")
 	fs.BoolVar(&asJSON, "json", false, "output identity as JSON")
 	positional, code, ok := a.parseCommand(fs, args, whoamiUsage)
 	if !ok {
@@ -73,6 +74,15 @@ func (a *app) cmdWhoami(args []string) int {
 	id, err := ops.Whoami(ctx, list, path)
 	if err != nil {
 		return a.fail(err)
+	}
+	if fix && id.InRepo && id.Account != nil {
+		sw, switched, err := ops.SwitchRemote(id.Account, id.Path)
+		if err != nil {
+			return a.fail(err)
+		}
+		if switched && !asJSON {
+			a.printRemoteSwitched(sw)
+		}
 	}
 
 	if asJSON {
@@ -232,7 +242,42 @@ func (a *app) cmdWhoami(args []string) int {
 		}
 		a.warnf("doppel's index is out of date; run `doppel doctor --fix`")
 	}
+	if a.interactive && !offline && !fix {
+		if sw, ok := ops.MismatchedRemote(id.Account, id.Path); ok {
+			if err := a.promptRemoteSwitch(id.Account, id.Path, sw); err != nil {
+				return a.fail(err)
+			}
+		}
+	}
 	return 0
+}
+
+func (a *app) promptRemoteSwitch(acc *accounts.Account, repo string, sw ops.RemoteSwitch) error {
+	apply := false
+	err := a.runForm(huh.NewForm(huh.NewGroup(
+		huh.NewConfirm().Title(fmt.Sprintf("Switch %s remote to %s?", sw.Remote, sw.Target)).
+			Description(sw.Command).Affirmative("Yes").Negative("No").Value(&apply),
+	)))
+	if err != nil || !apply {
+		if cancelled(err) {
+			return nil
+		}
+		return err
+	}
+	sw, _, err = ops.SwitchRemote(acc, repo)
+	if err != nil {
+		return err
+	}
+	a.printRemoteSwitched(sw)
+	return nil
+}
+
+func (a *app) printRemoteSwitched(sw ops.RemoteSwitch) {
+	if len(sw.Updates) == 1 {
+		a.successf("Switched %s remote to %s", sw.Remote, sw.Updates[0].URL)
+		return
+	}
+	a.successf("Switched %s remotes to %s", sw.Remote, sw.Target)
 }
 
 func (a *app) row(label, value string) {
