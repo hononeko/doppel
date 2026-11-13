@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/hononeko/doppel/internal/accounts"
+	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
 	"github.com/hononeko/doppel/internal/keys"
 	"github.com/hononeko/doppel/internal/ops"
 	"github.com/hononeko/doppel/internal/testenv"
@@ -286,5 +288,53 @@ func TestImport(t *testing.T) {
 	}
 	if len(loaded) != 2 {
 		t.Fatalf("loaded %d accounts, want 2", len(loaded))
+	}
+}
+
+func TestMismatchedRemoteAndSwitch(t *testing.T) {
+	s, _, _ := newContext(t, nil)
+	repo := s.GitInit("repo")
+	sshAcc := &accounts.Account{ID: "work", Protocol: accounts.ProtocolSSH}
+	httpsAcc := &accounts.Account{ID: "web", Protocol: accounts.ProtocolHTTPS}
+	hybridAcc := &accounts.Account{ID: "both", Protocol: accounts.ProtocolBoth}
+
+	// Nil account or repo with no remote.
+	if _, ok := ops.MismatchedRemote(nil, repo); ok {
+		t.Error("nil account shouldn't report mismatch")
+	}
+	if _, switched, err := ops.SwitchRemote(sshAcc, repo); err != nil || switched {
+		t.Errorf("repo without remote: switched=%v err=%v", switched, err)
+	}
+
+	// HTTPS remote on SSH-only account switches cleanly to SSH.
+	if _, err := git.Run(repo, "remote", "add", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := ops.MismatchedRemote(hybridAcc, repo); ok {
+		t.Error("hybrid account shouldn't report mismatch")
+	}
+	sw, switched, err := ops.SwitchRemote(sshAcc, repo)
+	if err != nil || !switched || sw.Target != "SSH" {
+		t.Fatalf("SwitchRemote(SSH) = %+v, %v, %v", sw, switched, err)
+	}
+	if r, _ := hosts.MainRemote(repo); r.FetchURL != "git@github.com:acme/api.git" {
+		t.Errorf("after SSH switch: %+v", r)
+	}
+
+	// SSH remote on HTTPS-only account switches cleanly to HTTPS.
+	sw, switched, err = ops.SwitchRemote(httpsAcc, repo)
+	if err != nil || !switched || sw.Target != "HTTPS" {
+		t.Fatalf("SwitchRemote(HTTPS) = %+v, %v, %v", sw, switched, err)
+	}
+	if r, _ := hosts.MainRemote(repo); r.FetchURL != "https://github.com/acme/api.git" {
+		t.Errorf("after HTTPS switch: %+v", r)
+	}
+
+	// Non-convertible HTTPS URL (port prevents SSH host port inference).
+	if _, err := git.Run(repo, "remote", "set-url", "origin", "https://github.com:8443/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := ops.MismatchedRemote(sshAcc, repo); ok {
+		t.Error("expected non-convertible HTTPS+port remote to return false")
 	}
 }

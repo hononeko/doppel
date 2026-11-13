@@ -155,3 +155,36 @@ func TestSteps(t *testing.T) {
 		t.Errorf("APIHosts = %v", got)
 	}
 }
+
+func TestApplyRemoteUpdates(t *testing.T) {
+	s := testenv.New(t)
+	repo := s.GitInit("repo")
+	for _, args := range [][]string{
+		{"remote", "add", "origin", "https://github.com/me/api.git"},
+		{"remote", "set-url", "--push", "origin", "https://github.com/me/push.git"},
+	} {
+		if _, err := git.Run(repo, args...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	r, ok := hosts.MainRemote(repo)
+	if !ok {
+		t.Fatal("MainRemote missing")
+	}
+	if err := hosts.ApplyRemoteUpdates(repo, hosts.UpdatesToSSH(r)); err != nil {
+		t.Fatalf("ApplyRemoteUpdates(SSH): %v", err)
+	}
+	got, _ := hosts.MainRemote(repo)
+	if got.FetchURL != "git@github.com:me/api.git" || got.PushURL != "git@github.com:me/push.git" {
+		t.Errorf("after UpdatesToSSH: %+v", got)
+	}
+
+	if err := hosts.ApplyRemoteUpdates(repo, hosts.UpdatesToHTTPS(got)); err != nil {
+		t.Fatalf("ApplyRemoteUpdates(HTTPS): %v", err)
+	}
+	got, _ = hosts.MainRemote(repo)
+	if got.FetchURL != "https://github.com/me/api.git" || got.PushURL != "https://github.com/me/push.git" {
+		t.Errorf("after UpdatesToHTTPS: %+v", got)
+	}
+}

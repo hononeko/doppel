@@ -58,7 +58,9 @@ func TestShellCompletion(t *testing.T) {
 		{[]string{"remove", ""}, []string{"work"}, nil, ":words", 0}, // aliases complete too
 		{[]string{"update", "--"}, []string{"--check", "--force"}, nil, ":words", 0},
 		{[]string{"ls", "--"}, []string{"--json"}, nil, ":words", 1},
-		{[]string{"whoami", "--"}, []string{"--json", "--offline"}, nil, ":words", 2},
+		{[]string{"whoami", "--"}, []string{"--fix", "--json", "--offline"}, nil, ":words", 3},
+		{[]string{"doctor", "--"}, []string{"--fix", "--fix-remotes", "--json"}, nil, ":words", 3},
+		{[]string{"test", "--"}, []string{"--json"}, nil, ":words", 1},
 		{[]string{"completion", ""}, []string{"zsh", "bash", "fish"}, nil, ":words", 3},
 		{[]string{"doctor", ""}, nil, nil, ":words", 0},
 		{[]string{"nosuchcommand", ""}, nil, nil, ":words", 0},

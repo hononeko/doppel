@@ -155,7 +155,7 @@ It's a sibling of [sshx](https://github.com/hononeko/sshx): the same stack, look
 - **R6.1** Works in any folder, or on a path argument, and shows:
   - the account in effect, and the folder rule (or default) that selected it
   - the effective name, email, auth key / HTTPS auth, and signing key, with whether signing is on
-  - the login check result for the repo's remote host. If the remote's protocol doesn't match the account's allowed protocols (an HTTPS remote for an SSH-only account, or an SSH remote for an HTTPS-only account), it gives the `git remote set-url` command that switches it to the matching protocol.
+  - the login check result for the repo's remote host. If the remote's protocol doesn't match the account's allowed protocols (an HTTPS remote for an SSH-only account, or an SSH remote for an HTTPS-only account), it gives the `git remote set-url` command that switches it to the matching protocol. With `--fix` (or when confirmed interactively in a terminal without `--offline` or `--json`), it applies that switch directly.
 - **R6.2** It asks Git which account applies (each account file carries `doppel.account`), so the result always matches what Git will actually do. Where doppel has to match folders itself (R6.4, and to name the rule that applied), it uses the same ordered rules the index is generated from (`accounts.FolderRules` and `accounts.MatchFolder`), so the two can't disagree.
 - **R6.3** It warns when a value in effect doesn't come from doppel, for example a `--local` override or a global setting placed after doppel's include. It shows where each value comes from, using `git config --show-origin`.
 - **R6.4** Outside any repo, it shows which account a repo created there would get. Git can only answer this for an existing repo, so here doppel applies the same folder rules itself.
@@ -205,6 +205,7 @@ Checks everything that could make Git use the wrong account, and prints a one-li
 - doppel's files say what the accounts say: account files, the index, the `allowed_signers` block and the include. A hand edit to `core.sshCommand` or `credential.username` in an account file shows up here. *(warning)*
 - Git itself can read the global config and everything it includes (`git config --global --includes --list`, run with the user's own config, unlike doppel's other Git calls). A bad line in a file doppel wrote, or in any file it includes, makes every Git command fail, and only this check sees it. *(problem)*
 - `--fix` rewrites exactly these files, through the same plan and the same validation as any save (R8.2a), so they match the accounts again. It refuses, naming the file and the value, when an account file holds a folder doppel wouldn't write (R2.5). It also restores a missing include. It doesn't touch anything else.
+- `--fix-remotes` (or confirming interactively when not using `--json`) switches convertible mismatched repo remotes in bound folders to match each account's allowed protocol.
 
 **Each account**
 - **Keys:**
@@ -284,7 +285,10 @@ Checks everything that could make Git use the wrong account, and prints a one-li
   With any account or key flag, or without a terminal, they never ask: scripts get errors, not questions.
 - **R9.1b** With `ACCESSIBLE` set, as in other Charm tools, forms become plain line-by-line prompts for screen readers, and `doppel` with no arguments prints `ls` instead of opening the full-screen browser.
 - **R9.2** Every action is also a subcommand, with flags for non-interactive use, so configsh or scripts can set up accounts.
-- **R9.2b Machine-readable output:** `doppel ls --json` outputs an array of account objects with stable fields: `id`, `name`, `email`, `default`, `protocol`, `https_user`, `credential_helper`, `hosts`, `github_user`, `folders`, `auth_key`, `signing_key`, `sign_commits`, and `sign_tags`. An empty list produces `[]`.
+- **R9.2b Machine-readable output:**
+  - `doppel ls --json` outputs an array of account objects with stable fields: `id`, `name`, `email`, `default`, `protocol`, `https_user`, `credential_helper`, `hosts`, `github_user`, `folders`, `auth_key`, `signing_key`, `sign_commits`, and `sign_tags`. An empty list produces `[]`.
+  - `doppel doctor [--fix] [--fix-remotes] [--json]` outputs `{findings, problems, warnings}`, where each finding has `severity` (`ok`, `note`, `warning`, `problem`), `area`, `message`, and optional `fix`. It exits with status `1` when `problems > 0`.
+  - `doppel test [<id>] [--json]` outputs `{accounts, ok}`, where each account has `account`, `ok`, `checks` (`label`, `ok`, `skipped`, `detail`, optional `fix`), and optional `hints`. It exits with status `1` when any check fails.
 - **R9.2a Shell completion:** `doppel completion zsh|bash|fish` prints a script that completes commands, flags, account IDs (with their emails), the folders bound to accounts for `unbind`, known hosts for `--host`, folders for `--folder`, `bind` and `whoami`, protocol choices for `--protocol`, and files for `--auth-key` and `--signing-key`. It covers `dop` too.
   - The scripts are thin. They run the hidden `doppel __complete <words>`, which prints the candidates and whether the shell should complete paths itself, so `~` and quoting work as in the shell's own completion.
   - doppel learns each command's flags from the command itself, without running it, so completion can't fall behind the flags. `__complete` never writes, never asks anything, and doesn't fail: without Git or accounts it offers less.
@@ -309,11 +313,12 @@ doppel rename <id> <new-id>              Change an account's ID
 doppel bind <id> <folder>...             Bind folders to an account
 doppel unbind <folder>...                Remove folder rules
 doppel default [<id> | --none]           Show or set the default account
-doppel whoami [path] [--offline] [--json]
+doppel whoami [path] [--offline] [--fix] [--json]
                                          Show which account applies here, and why
-doppel test [<id>]                       Log in to each host and sign a test message
+doppel test [<id>] [--json]              Log in to each host and sign a test message
 doppel load <id> [--auth|--signing]      Load the account's keys into ssh-agent
-doppel doctor [--fix]                    Check every account for problems; --fix brings doppel's files up to date
+doppel doctor [--fix] [--fix-remotes] [--json]
+                                         Check every account for problems; --fix brings doppel's files up to date
 doppel export <id> [--auth|--signing] [--no-copy]
                                          Print and copy a public key, with host instructions
 doppel upload <id> [--auth|--signing]    Upload keys to GitHub with gh

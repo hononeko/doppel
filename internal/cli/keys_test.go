@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -357,6 +358,31 @@ func TestTestCommand(t *testing.T) {
 	s.mustFail(1, "test", "work")
 	if !strings.Contains(s.stdout.String(), "isn't loaded in your agent; load it with `ssh-add ~/.ssh/id_locked`") {
 		t.Errorf("locked key not explained:\n%s", s.stdout.String())
+	}
+
+	// test --json reports failed checks and exits 1, or clean checks and exits 0.
+	s.mustFail(1, "test", "work", "--json")
+	var tj testJSON
+	if err := json.Unmarshal(s.stdout.Bytes(), &tj); err != nil {
+		t.Fatalf("failing test --json parse failed: %v\n%s", err, s.stdout.String())
+	}
+	if tj.OK || len(tj.Accounts) != 1 || tj.Accounts[0].OK {
+		t.Errorf("expected failing testJSON, got %+v", tj)
+	}
+	s.mustRun("edit", "work", "--auth-key", "~/.ssh/id_work", "--sign-with-auth-key", "--github-user", "jane-acme")
+	out = s.mustRun("test", "--json")
+	if err := json.Unmarshal([]byte(out), &tj); err != nil {
+		t.Fatalf("passing test --json parse failed: %v\n%s", err, out)
+	}
+	if !tj.OK || len(tj.Accounts) != 1 || !tj.Accounts[0].OK || len(tj.Accounts[0].Checks) != 2 {
+		t.Errorf("passing testJSON = %+v", tj)
+	}
+
+	// test --json with zero accounts returns an empty accounts list and ok: true.
+	s2 := newSandbox(t)
+	out = s2.mustRun("test", "--json")
+	if err := json.Unmarshal([]byte(out), &tj); err != nil || !tj.OK || len(tj.Accounts) != 0 {
+		t.Errorf("empty testJSON = %+v, err=%v", tj, err)
 	}
 }
 

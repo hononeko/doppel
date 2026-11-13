@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/hononeko/doppel/internal/accounts"
 	"github.com/hononeko/doppel/internal/git"
+	"github.com/hononeko/doppel/internal/hosts"
 )
 
 // doctorSandbox has a default account and a work account with a key of
@@ -282,5 +284,86 @@ func TestDoctorRunFromRepoWithIDE(t *testing.T) {
 	}
 	if !strings.Contains(out, "Current repo: .vscode: built-in credential provider is disabled") {
 		t.Errorf("doctor in repo missing .vscode finding:\n%s", out)
+	}
+}
+
+func TestDoctorJSON(t *testing.T) {
+	s := doctorSandbox(t)
+	out := s.mustRun("doctor", "--json")
+	var doc doctorJSON
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatalf("doctor --json parse failed: %v\n%s", err, out)
+	}
+	if doc.Problems != 0 || doc.Warnings != 0 || len(doc.Findings) == 0 {
+		t.Errorf("clean doctorJSON = %+v", doc)
+	}
+	hasOK := false
+	for _, f := range doc.Findings {
+		if f.Severity == "ok" && f.Area == "Git config" {
+			hasOK = true
+		}
+	}
+	if !hasOK {
+		t.Errorf("missing OK Git config finding in %+v", doc.Findings)
+	}
+
+	// Problems make doctor --json exit 1 while still printing valid JSON.
+	s.mustRun("uninstall", "--yes")
+	s.mustFail(1, "doctor", "--json")
+	if err := json.Unmarshal(s.stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("failing doctor --json parse failed: %v\n%s", err, s.stdout.String())
+	}
+	if doc.Problems == 0 {
+		t.Errorf("expected problems > 0 in %+v", doc)
+	}
+}
+
+func TestDoctorFixRemotesAndInteractive(t *testing.T) {
+	s := doctorSandbox(t)
+	api := s.GitInit("projects/work/api")
+	if _, err := git.Run(api, "remote", "add", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Interactive decline leaves the remote unchanged.
+	s.tty = true
+	s.stdin = script("n")
+	out := s.mustRun("doctor")
+	if !strings.Contains(out, "Switch ~/projects/work/api remotes to SSH?") {
+		t.Errorf("missing interactive remote prompt:\n%s", out)
+	}
+	if r, _ := hosts.MainRemote(api); r.FetchURL != "https://github.com/acme/api.git" {
+		t.Errorf("declined remote changed to %+v", r)
+	}
+
+	// Interactive accept switches the remote.
+	s.stdin = script("y")
+	out = s.mustRun("doctor")
+	if !strings.Contains(out, "Switched ~/projects/work/api remotes to SSH") {
+		t.Errorf("missing switched confirmation:\n%s", out)
+	}
+	if r, _ := hosts.MainRemote(api); r.FetchURL != "git@github.com:acme/api.git" {
+		t.Errorf("accepted remote = %+v", r)
+	}
+
+	// --fix-remotes switches multiple repos non-interactively and reports cleanly in --json.
+	s.tty = false
+	if _, err := git.Run(api, "remote", "set-url", "origin", "https://github.com/acme/api.git"); err != nil {
+		t.Fatal(err)
+	}
+	web := s.GitInit("projects/work/web")
+	if _, err := git.Run(web, "remote", "add", "origin", "https://github.com/acme/web.git"); err != nil {
+		t.Fatal(err)
+	}
+	out = s.mustRun("doctor", "--fix-remotes", "--json")
+	var doc doctorJSON
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Warnings != 0 || doc.Problems != 0 {
+		t.Errorf("doctor --fix-remotes --json had warnings/problems: %+v", doc)
+	}
+	if r, _ := hosts.MainRemote(web); r.FetchURL != "git@github.com:acme/web.git" {
+		t.Errorf("web remote after --fix-remotes = %+v", r)
 	}
 }
